@@ -1,0 +1,211 @@
+/* ============================================================
+   SmartIQC — Custom CSS
+   Styles yang tidak bisa dicapai hanya dengan Tailwind CDN
+   ============================================================ */
+
+/* ── Sidebar links ──────────────────────────────────────────── */
+.sidebar-link {
+    display: flex;
+    align-items: center;
+    gap: 0.625rem;
+    padding: 0.5rem 0.75rem;
+    border-radius: 0.5rem;
+    font-size: 0.875rem;
+    color: rgb(196 218 255);
+    transition: background-color 0.15s, color 0.15s;
+    text-decoration: none;
+}
+.sidebar-link:hover {
+    background-color: rgba(255,255,255,0.1);
+    color: #fff;
+}
+.sidebar-link-active {
+    background-color: rgba(255,255,255,0.18);
+    color: #fff;
+    font-weight: 600;
+}
+
+/* ── Status badges ──────────────────────────────────────────── */
+.badge {
+    display: inline-flex;
+    align-items: center;
+    padding: 0.15rem 0.6rem;
+    border-radius: 9999px;
+    font-size: 0.72rem;
+    font-weight: 600;
+    letter-spacing: 0.03em;
+    white-space: nowrap;
+}
+.badge-check      { background:#fef9c3; color:#854d0e; border:1px solid #fde047; }
+.badge-validation { background:#dbeafe; color:#1e40af; border:1px solid #93c5fd; }
+.badge-makencn    { background:#fee2e2; color:#991b1b; border:1px solid #fca5a5; }
+.badge-done       { background:#dcfce7; color:#166534; border:1px solid #86efac; }
+.badge-process    { background:#ede9fe; color:#5b21b6; border:1px solid #c4b5fd; }
+.badge-default    { background:#f3f4f6; color:#374151; border:1px solid #d1d5db; }
+
+/* ── Cards ──────────────────────────────────────────────────── */
+.card {
+    background: #fff;
+    border-radius: 0.875rem;
+    box-shadow: 0 1px 3px 0 rgba(0,0,0,.07), 0 1px 2px -1px rgba(0,0,0,.07);
+    padding: 1.5rem;
+}
+.card-header {
+    font-size: 1rem;
+    font-weight: 700;
+    color: #1a237e;
+    margin-bottom: 1rem;
+    padding-bottom: 0.75rem;
+    border-bottom: 1px solid #e5e7eb;
+}
+
+/* ── Table ──────────────────────────────────────────────────── */
+.tbl { width: 100%; border-collapse: collapse; font-size: 0.875rem; }
+.tbl thead tr { background: #f0f4ff; }
+.tbl thead th {
+    padding: 0.6rem 0.875rem;
+    text-align: left;
+    font-size: 0.72rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: #3730a3;
+    white-space: nowrap;
+}
+.tbl tbody tr { border-bottom: 1px solid #f3f4f6; transition: background 0.1s; }
+.tbl tbody tr:hover { background: #f8f9ff; }
+.tbl td {
+    padding: 0.65rem 0.875rem;
+    color: #374151;
+    vertical-align: middle;
+}
+.tbl-empty {
+    text-align: center;
+    padding: 3rem 1rem;
+    color: #9ca3af;
+    font-size: 0.875rem;
+}
+
+/* ── Buttons ────────────────────────────────────────────────── */
+.btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.375rem;
+    padding: 0.5rem 1rem;
+    border-radius: 0.5rem;
+    font-size: 0.875rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.15s;
+    border: none;
+    text-decoration: none;
+    white-space: nowrap;
+}
+.btn-primary   { background:#1a237e; color:#fff; }
+.btn-primary:hover  { background:#1565c0; }
+.btn-blue      { background:#1976d2; color:#fff; }
+.btn-blue:hover { background:#1565c0; }
+.btn-danger    { background:#c62828; color:#fff; }
+.btn-danger:hover { background:#b71c1c; }
+.btn-success   { background:#2e7d32; color:#fff; }
+.btn-success:hover { background:#1b5e20; }
+.btn-outline   { background:#fff; color:#374151; border:1px solid #d1d5db; }
+.btn-outline:hover { background:#f9fafb; }
+.btn-sm        { padding: 0.3rem 0.7rem; font-size: 0.78rem; }
+
+/* ── Form inputs ────────────────────────────────────────────── */
+.form-input {
+    width: 100%;
+    padding: 0.55rem 0.75rem;
+    border: 1px solid #d1d5db;
+    border-radius: 0.5rem;
+    font-size: 0.9rem;
+    color: #111827;
+    background: #fff;
+    transition: border-color 0.15s, box-shadow 0.15s;
+    outline: none;
+}
+.form-input:focus {
+    border-color: #3b82f6;
+    box-shadow: 0 0 0 3px rgba(59,130,246,0.15);
+}
+.form-label {
+    display: block;
+    font-size: 0.8rem;
+    font-weight: 600;
+    color: #374151;
+    margin-bottom: 0.3rem;
+}
+.form-group { margin-bottom: 1rem; }
+
+/* ── Modal ──────────────────────────────────────────────────── */
+.modal-backdrop {
+    position: fixed; inset: 0; background: rgba(0,0,0,0.5);
+    z-index: 40; display: flex; align-items: center; justify-content: center;
+    padding: 1rem;
+}
+.modal-box {
+    background: #fff; border-radius: 1rem;
+    box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+    width: 100%; max-height: 90vh; overflow-y: auto;
+}
+
+/* ── Camera preview ─────────────────────────────────────────── */
+#camera-preview {
+    width: 100%; border-radius: 0.75rem;
+    background: #000; aspect-ratio: 4/3;
+    object-fit: cover;
+}
+#camera-canvas { display: none; }
+.camera-capture-btn {
+    width: 3.5rem; height: 3.5rem;
+    border-radius: 50%;
+    background: #1a237e;
+    border: 4px solid #fff;
+    box-shadow: 0 0 0 2px #1a237e;
+    cursor: pointer;
+    transition: transform 0.1s;
+}
+.camera-capture-btn:active { transform: scale(0.9); }
+
+/* ── Toast notifications ────────────────────────────────────── */
+.toast {
+    display: flex; align-items: flex-start; gap: 0.75rem;
+    padding: 0.875rem 1rem;
+    background: #fff;
+    border-radius: 0.75rem;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.15);
+    border-left: 4px solid #1a237e;
+    pointer-events: auto;
+    animation: slideIn 0.3s ease;
+    max-width: 360px;
+}
+.toast-danger { border-left-color: #ef4444; }
+.toast-success { border-left-color: #22c55e; }
+@keyframes slideIn {
+    from { transform: translateX(100%); opacity: 0; }
+    to   { transform: translateX(0); opacity: 1; }
+}
+
+/* ── Pagination ─────────────────────────────────────────────── */
+.page-btn {
+    padding: 0.375rem 0.75rem;
+    border: 1px solid #d1d5db;
+    border-radius: 0.375rem;
+    font-size: 0.8rem;
+    color: #374151;
+    background: #fff;
+    cursor: pointer;
+    text-decoration: none;
+    transition: background 0.1s;
+}
+.page-btn:hover  { background: #f3f4f6; }
+.page-btn.active { background: #1a237e; color: #fff; border-color: #1a237e; }
+.page-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+
+/* ── Print styles ───────────────────────────────────────────── */
+@media print {
+    .no-print { display: none !important; }
+    body { background: #fff !important; }
+    .card { box-shadow: none !important; border: 1px solid #ddd; }
+}

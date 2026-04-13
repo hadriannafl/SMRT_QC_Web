@@ -1,0 +1,170 @@
+@model IEnumerable<SMRT_QC_Web.Models.User>
+@{
+    ViewData["Title"] = "Manajemen User";
+}
+
+<div class="space-y-5" x-data="userPage()">
+
+    <!-- Header -->
+    <div class="flex items-center justify-between">
+        <div>
+            <h2 class="text-xl font-bold text-gray-900">Manajemen User</h2>
+            <p class="text-sm text-gray-500">Kelola akun pengguna aplikasi SmartIQC</p>
+        </div>
+        <button @@click="openCreate()" class="btn btn-primary">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
+            </svg>
+            Tambah User
+        </button>
+    </div>
+
+    <!-- Search -->
+    <div class="card py-3">
+        <input type="text" placeholder="🔍  Cari username atau posisi..."
+               class="form-input" style="max-width:380px"
+               oninput="tableSearch(this, 'user-table')" />
+    </div>
+
+    <!-- Table -->
+    <div class="card p-0 overflow-hidden">
+        <table class="tbl" id="user-table">
+            <thead>
+                <tr>
+                    <th>ID</th>
+                    <th>Username</th>
+                    <th>Posisi / Role</th>
+                    <th>Dibuat</th>
+                    <th class="text-center">Aksi</th>
+                </tr>
+            </thead>
+            <tbody>
+                @if (!Model.Any())
+                {
+                    <tr><td colspan="5" class="tbl-empty">Belum ada user. Klik "Tambah User" untuk membuat akun pertama.</td></tr>
+                }
+                @foreach (var u in Model)
+                {
+                    <tr>
+                        <td class="text-gray-400 font-mono text-xs">@u.Id</td>
+                        <td class="font-semibold text-gray-900">@u.UserName</td>
+                        <td>
+                            @{
+                                var roleColor = u.Position switch {
+                                    "ADMIN"      => "badge-makencn",
+                                    "MANAGER"    => "badge-validation",
+                                    "SUPERVISOR" => "badge-process",
+                                    _            => "badge-default"
+                                };
+                            }
+                            <span class="badge @roleColor">@u.Position</span>
+                        </td>
+                        <td class="text-gray-500 text-sm">@u.CreatedAt.ToString("dd MMM yyyy")</td>
+                        <td>
+                            <div class="flex items-center justify-center gap-2">
+                                <button @@click="openEdit(@u.Id, '@u.UserName', '@u.Position')"
+                                        class="btn btn-outline btn-sm">Edit</button>
+                                @if (u.UserName != User.Identity?.Name)
+                                {
+                                    <form method="post" action="@Url.Action("Delete","User", new {id = u.Id})"
+                                          onsubmit="return confirmDelete('@u.UserName')">
+                                        @Html.AntiForgeryToken()
+                                        <button type="submit" class="btn btn-danger btn-sm">Hapus</button>
+                                    </form>
+                                }
+                            </div>
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+
+    <!-- ── Modal Create User ────────────────────────────────────── -->
+    <div class="modal-backdrop" x-show="showCreate" x-cloak>
+        <div class="modal-box max-w-md p-6" @@click.stop>
+            <h3 class="text-lg font-bold text-gray-900 mb-5">Tambah User Baru</h3>
+            <form method="post" action="@Url.Action("Create","User")">
+                @Html.AntiForgeryToken()
+                <div class="form-group">
+                    <label class="form-label">Username *</label>
+                    <input name="UserName" class="form-input" required placeholder="Huruf besar, tanpa spasi"
+                           style="text-transform:uppercase" />
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Password *</label>
+                    <input name="Password" type="password" class="form-input" required minlength="6"
+                           placeholder="Minimal 6 karakter" />
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Posisi / Role *</label>
+                    <select name="Position" class="form-input" required>
+                        <option value="">— Pilih Role —</option>
+                        <option value="ADMIN">ADMIN</option>
+                        <option value="MANAGER">MANAGER</option>
+                        <option value="SUPERVISOR">SUPERVISOR</option>
+                        <option value="STAFF">STAFF</option>
+                    </select>
+                </div>
+                <div class="flex gap-3 justify-end mt-5">
+                    <button type="button" class="btn btn-outline" @@click="showCreate = false">Batal</button>
+                    <button type="submit" class="btn btn-primary">Simpan</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- ── Modal Edit User ──────────────────────────────────────── -->
+    <div class="modal-backdrop" x-show="showEdit" x-cloak>
+        <div class="modal-box max-w-md p-6" @@click.stop>
+            <h3 class="text-lg font-bold text-gray-900 mb-5">Edit User</h3>
+            <form method="post" :action="`/User/Edit/${editId}`">
+                @Html.AntiForgeryToken()
+                <input type="hidden" name="_method" value="PUT" />
+                <div class="form-group">
+                    <label class="form-label">Username</label>
+                    <input :value="editName" class="form-input bg-gray-50" readonly />
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Password Baru <span class="text-gray-400 font-normal">(kosongkan jika tidak ganti)</span></label>
+                    <input name="NewPassword" type="password" class="form-input" placeholder="Password baru" />
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Posisi / Role *</label>
+                    <select name="Position" class="form-input" required :value="editPosition">
+                        <option value="ADMIN" :selected="editPosition === 'ADMIN'">ADMIN</option>
+                        <option value="MANAGER" :selected="editPosition === 'MANAGER'">MANAGER</option>
+                        <option value="SUPERVISOR" :selected="editPosition === 'SUPERVISOR'">SUPERVISOR</option>
+                        <option value="STAFF" :selected="editPosition === 'STAFF'">STAFF</option>
+                    </select>
+                </div>
+                <div class="flex gap-3 justify-end mt-5">
+                    <button type="button" class="btn btn-outline" @@click="showEdit = false">Batal</button>
+                    <button type="submit" class="btn btn-primary">Update</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+</div>
+
+@section Scripts {
+<script>
+function userPage() {
+    return {
+        showCreate: false,
+        showEdit: false,
+        editId: null, editName: '', editPosition: '',
+
+        openCreate() { this.showCreate = true; },
+
+        openEdit(id, name, position) {
+            this.editId = id;
+            this.editName = name;
+            this.editPosition = position;
+            this.showEdit = true;
+        }
+    };
+}
+</script>
+}

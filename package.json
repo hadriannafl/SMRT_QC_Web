@@ -1,0 +1,12 @@
+{
+  "name": "smrt-qc-web",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "build": "tailwindcss -i ./resources/css/tailwind.css -o ./wwwroot/css/tailwind.css --minify",
+    "watch": "tailwindcss -i ./resources/css/tailwind.css -o ./wwwroot/css/tailwind.css --watch"
+  },
+  "devDependencies": {
+    "tailwindcss": "^3.4.0"
+  }
+}

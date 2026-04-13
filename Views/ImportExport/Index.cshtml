@@ -1,0 +1,110 @@
+@{
+    ViewData["Title"] = "Import / Export Data";
+}
+
+<div class="max-w-4xl mx-auto space-y-6">
+
+    <div>
+        <h2 class="text-xl font-bold text-gray-900">Import / Export Data</h2>
+        <p class="text-sm text-gray-500">Transfer data inspeksi dari/ke file Excel (.xlsx)</p>
+    </div>
+
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+
+        <!-- ── Import ─────────────────────────────────────────── -->
+        <div class="card" x-data="{ dragging: false }">
+            <div class="card-header">📥 Import dari Excel</div>
+
+            <p class="text-sm text-gray-500 mb-4">
+                Upload file Excel dengan format kolom:<br>
+                <code class="bg-gray-100 px-1 rounded text-xs">
+                    SupplyNumber | SupplyDate | PartNumber | PoNumber | Operator | ItemCategory
+                </code>
+            </p>
+
+            <form method="post" action="@Url.Action("Import","ImportExport")"
+                  enctype="multipart/form-data">
+                @Html.AntiForgeryToken()
+
+                <!-- Drop zone -->
+                <div class="border-2 border-dashed rounded-xl p-8 text-center transition-colors cursor-pointer mb-4"
+                     :class="dragging ? 'border-blue-400 bg-blue-50' : 'border-gray-300 hover:border-gray-400'"
+                     @@dragover.prevent="dragging = true"
+                     @@dragleave="dragging = false"
+                     @@drop.prevent="dragging = false; $refs.fileInput.files = $event.dataTransfer.files"
+                     @@click="$refs.fileInput.click()">
+                    <p class="text-3xl mb-2">📂</p>
+                    <p class="text-sm font-medium text-gray-600">Drag & drop file Excel di sini</p>
+                    <p class="text-xs text-gray-400 mt-1">atau klik untuk pilih file (.xlsx, maks 5 MB)</p>
+                    <input x-ref="fileInput" type="file" name="file" accept=".xlsx,.xls"
+                           class="hidden" required
+                           @@change="$el.closest('div').querySelector('p.text-sm').textContent = $el.files[0]?.name || 'Pilih file'" />
+                </div>
+
+                <button type="submit" class="btn btn-blue w-full">
+                    📥 Import Sekarang
+                </button>
+            </form>
+
+            <!-- Download Template -->
+            <div class="mt-4 pt-4 border-t border-gray-100">
+                <p class="text-xs text-gray-500 mb-2">Belum punya template?</p>
+                <a href="@Url.Action("DownloadTemplate","ImportExport")"
+                   class="btn btn-outline btn-sm">
+                    ⬇️ Download Template Excel
+                </a>
+            </div>
+        </div>
+
+        <!-- ── Export ─────────────────────────────────────────── -->
+        <div class="card">
+            <div class="card-header">📤 Export ke Excel</div>
+
+            <p class="text-sm text-gray-500 mb-5">
+                Export data inspeksi ke file Excel. Pilih rentang tanggal dan filter status.
+            </p>
+
+            <form method="get" action="@Url.Action("Export","ImportExport")">
+                <div class="form-group">
+                    <label class="form-label">Dari Tanggal</label>
+                    <input name="dateFrom" type="date" class="form-input"
+                           value="@DateTime.Now.AddMonths(-1).ToString("yyyy-MM-dd")" />
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Sampai Tanggal</label>
+                    <input name="dateTo" type="date" class="form-input"
+                           value="@DateTime.Now.ToString("yyyy-MM-dd")" />
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Filter Status</label>
+                    <select name="status" class="form-input">
+                        <option value="">Semua Status</option>
+                        <option value="CHECK">CHECK</option>
+                        <option value="VALIDATION">VALIDATION</option>
+                        <option value="MAKE NCN">MAKE NCN</option>
+                        <option value="DONE">DONE</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Part Number</label>
+                    <input name="partNumber" class="form-input" placeholder="Kosongkan = semua part" />
+                </div>
+
+                <button type="submit" class="btn btn-success w-full mt-2">
+                    📤 Export ke Excel
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Import history / log -->
+    @if (ViewBag.ImportResult != null)
+    {
+        <div class="card border-l-4 @(ViewBag.ImportSuccess == true ? "border-green-500" : "border-red-500")">
+            <div class="card-header @(ViewBag.ImportSuccess == true ? "text-green-700" : "text-red-700")">
+                @(ViewBag.ImportSuccess == true ? "✅ Import Berhasil" : "❌ Import Gagal")
+            </div>
+            <p class="text-sm text-gray-700">@ViewBag.ImportResult</p>
+        </div>
+    }
+</div>

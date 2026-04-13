@@ -1,0 +1,153 @@
+@model IEnumerable<SMRT_QC_Web.Models.Part>
+@{
+    ViewData["Title"] = "Master Part";
+}
+
+<div class="space-y-5" x-data="partPage()">
+
+    <!-- Header -->
+    <div class="flex items-center justify-between">
+        <div>
+            <h2 class="text-xl font-bold text-gray-900">Master Part</h2>
+            <p class="text-sm text-gray-500">Data master nomor part untuk inspeksi</p>
+        </div>
+        <button @@click="showCreate = true" class="btn btn-primary">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
+            </svg>
+            Tambah Part
+        </button>
+    </div>
+
+    <!-- Filter + Search -->
+    <div class="card py-3 flex flex-wrap gap-3 items-center">
+        <input type="text" placeholder="🔍  Cari part number atau nama..."
+               class="form-input" style="max-width:320px"
+               oninput="tableSearch(this, 'part-table')" />
+    </div>
+
+    <!-- Table -->
+    <div class="card p-0 overflow-hidden">
+        <table class="tbl" id="part-table">
+            <thead>
+                <tr>
+                    <th>Part Number</th>
+                    <th>Nama Part</th>
+                    <th>Kategori</th>
+                    <th>Spesifikasi</th>
+                    <th class="text-center">Aksi</th>
+                </tr>
+            </thead>
+            <tbody>
+                @if (!Model.Any())
+                {
+                    <tr><td colspan="5" class="tbl-empty">Belum ada data part.</td></tr>
+                }
+                @foreach (var p in Model)
+                {
+                    <tr>
+                        <td class="font-mono font-semibold text-[#1A237E]">@p.PartNumber</td>
+                        <td class="text-gray-800">@(p.PartName ?? "—")</td>
+                        <td><span class="badge badge-default">@(p.Category ?? "—")</span></td>
+                        <td class="text-gray-500 text-sm max-w-xs truncate">@(p.Spec ?? "—")</td>
+                        <td>
+                            <div class="flex items-center justify-center gap-2">
+                                <button @@click="openEdit(@p.Id, '@p.PartNumber', '@(p.PartName ?? "")', '@(p.Category ?? "")', '@(p.Spec ?? "")')"
+                                        class="btn btn-outline btn-sm">Edit</button>
+                                <form method="post" action="@Url.Action("Delete","Part", new {id = p.Id})"
+                                      onsubmit="return confirmDelete('part @p.PartNumber')">
+                                    @Html.AntiForgeryToken()
+                                    <button type="submit" class="btn btn-danger btn-sm">Hapus</button>
+                                </form>
+                            </div>
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+
+    <!-- Modal Create -->
+    <div class="modal-backdrop" x-show="showCreate" x-cloak>
+        <div class="modal-box max-w-lg p-6" @@click.stop>
+            <h3 class="text-lg font-bold text-gray-900 mb-5">Tambah Part Baru</h3>
+            <form method="post" action="@Url.Action("Create","Part")">
+                @Html.AntiForgeryToken()
+                <div class="grid grid-cols-2 gap-4">
+                    <div class="form-group col-span-2">
+                        <label class="form-label">Part Number *</label>
+                        <input name="PartNumber" class="form-input" required placeholder="Contoh: PT-001"
+                               style="text-transform:uppercase" />
+                    </div>
+                    <div class="form-group col-span-2">
+                        <label class="form-label">Nama Part *</label>
+                        <input name="PartName" class="form-input" required placeholder="Nama deskriptif part" />
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Kategori</label>
+                        <input name="Category" class="form-input" placeholder="Contoh: BODY, ENGINE" />
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Spesifikasi</label>
+                        <input name="Spec" class="form-input" placeholder="Spec atau toleransi" />
+                    </div>
+                </div>
+                <div class="flex gap-3 justify-end mt-4">
+                    <button type="button" class="btn btn-outline" @@click="showCreate = false">Batal</button>
+                    <button type="submit" class="btn btn-primary">Simpan</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Modal Edit -->
+    <div class="modal-backdrop" x-show="showEdit" x-cloak>
+        <div class="modal-box max-w-lg p-6" @@click.stop>
+            <h3 class="text-lg font-bold text-gray-900 mb-5">Edit Part</h3>
+            <form method="post" :action="`/Part/Edit/${editId}`">
+                @Html.AntiForgeryToken()
+                <div class="grid grid-cols-2 gap-4">
+                    <div class="form-group col-span-2">
+                        <label class="form-label">Part Number</label>
+                        <input :value="editPN" class="form-input bg-gray-50" readonly />
+                    </div>
+                    <div class="form-group col-span-2">
+                        <label class="form-label">Nama Part *</label>
+                        <input name="PartName" :value="editName" class="form-input" required />
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Kategori</label>
+                        <input name="Category" :value="editCat" class="form-input" />
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Spesifikasi</label>
+                        <input name="Spec" :value="editSpec" class="form-input" />
+                    </div>
+                </div>
+                <div class="flex gap-3 justify-end mt-4">
+                    <button type="button" class="btn btn-outline" @@click="showEdit = false">Batal</button>
+                    <button type="submit" class="btn btn-primary">Update</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+</div>
+
+@section Scripts {
+<script>
+function partPage() {
+    return {
+        showCreate: false,
+        showEdit: false,
+        editId: null, editPN: '', editName: '', editCat: '', editSpec: '',
+
+        openEdit(id, pn, name, cat, spec) {
+            this.editId = id; this.editPN = pn; this.editName = name;
+            this.editCat = cat; this.editSpec = spec;
+            this.showEdit = true;
+        }
+    };
+}
+</script>
+}

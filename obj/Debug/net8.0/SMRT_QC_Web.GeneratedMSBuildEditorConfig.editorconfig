@@ -1,0 +1,95 @@
+is_global = true
+build_property.TargetFramework = net8.0
+build_property.TargetFrameworkIdentifier = .NETCoreApp
+build_property.TargetFrameworkVersion = v8.0
+build_property.TargetPlatformMinVersion = 
+build_property.UsingMicrosoftNETSdkWeb = true
+build_property.ProjectTypeGuids = 
+build_property.InvariantGlobalization = 
+build_property.PlatformNeutralAssembly = 
+build_property.EnforceExtendedAnalyzerRules = 
+build_property._SupportedPlatformList = Linux,macOS,Windows
+build_property.RootNamespace = SMRT_QC_Web
+build_property.RootNamespace = SMRT_QC_Web
+build_property.ProjectDir = /Users/devtrisolusi/Downloads/SMRT_QC_Web/
+build_property.EnableComHosting = 
+build_property.EnableGeneratedComInterfaceComImportInterop = 
+build_property.RazorLangVersion = 8.0
+build_property.SupportLocalizedComponentNames = 
+build_property.GenerateRazorMetadataSourceChecksumAttributes = 
+build_property.MSBuildProjectDirectory = /Users/devtrisolusi/Downloads/SMRT_QC_Web
+build_property._RazorSourceGeneratorDebug = 
+build_property.EffectiveAnalysisLevelStyle = 8.0
+build_property.EnableCodeStyleSeverity = 
+
+[/Users/devtrisolusi/Downloads/SMRT_QC_Web/Views/Auth/AccessDenied.cshtml]
+build_metadata.AdditionalFiles.TargetPath = Vmlld3MvQXV0aC9BY2Nlc3NEZW5pZWQuY3NodG1s
+build_metadata.AdditionalFiles.CssScope = 
+
+[/Users/devtrisolusi/Downloads/SMRT_QC_Web/Views/Auth/Login.cshtml]
+build_metadata.AdditionalFiles.TargetPath = Vmlld3MvQXV0aC9Mb2dpbi5jc2h0bWw=
+build_metadata.AdditionalFiles.CssScope = 
+
+[/Users/devtrisolusi/Downloads/SMRT_QC_Web/Views/Dashboard/Index.cshtml]
+build_metadata.AdditionalFiles.TargetPath = Vmlld3MvRGFzaGJvYXJkL0luZGV4LmNzaHRtbA==
+build_metadata.AdditionalFiles.CssScope = 
+
+[/Users/devtrisolusi/Downloads/SMRT_QC_Web/Views/ImportExport/Index.cshtml]
+build_metadata.AdditionalFiles.TargetPath = Vmlld3MvSW1wb3J0RXhwb3J0L0luZGV4LmNzaHRtbA==
+build_metadata.AdditionalFiles.CssScope = 
+
+[/Users/devtrisolusi/Downloads/SMRT_QC_Web/Views/Inspection/Create.cshtml]
+build_metadata.AdditionalFiles.TargetPath = Vmlld3MvSW5zcGVjdGlvbi9DcmVhdGUuY3NodG1s
+build_metadata.AdditionalFiles.CssScope = 
+
+[/Users/devtrisolusi/Downloads/SMRT_QC_Web/Views/Inspection/Detail.cshtml]
+build_metadata.AdditionalFiles.TargetPath = Vmlld3MvSW5zcGVjdGlvbi9EZXRhaWwuY3NodG1s
+build_metadata.AdditionalFiles.CssScope = 
+
+[/Users/devtrisolusi/Downloads/SMRT_QC_Web/Views/Inspection/Index.cshtml]
+build_metadata.AdditionalFiles.TargetPath = Vmlld3MvSW5zcGVjdGlvbi9JbmRleC5jc2h0bWw=
+build_metadata.AdditionalFiles.CssScope = 
+
+[/Users/devtrisolusi/Downloads/SMRT_QC_Web/Views/Ncn/Create.cshtml]
+build_metadata.AdditionalFiles.TargetPath = Vmlld3MvTmNuL0NyZWF0ZS5jc2h0bWw=
+build_metadata.AdditionalFiles.CssScope = 
+
+[/Users/devtrisolusi/Downloads/SMRT_QC_Web/Views/Ncn/Index.cshtml]
+build_metadata.AdditionalFiles.TargetPath = Vmlld3MvTmNuL0luZGV4LmNzaHRtbA==
+build_metadata.AdditionalFiles.CssScope = 
+
+[/Users/devtrisolusi/Downloads/SMRT_QC_Web/Views/Parts/Index.cshtml]
+build_metadata.AdditionalFiles.TargetPath = Vmlld3MvUGFydHMvSW5kZXguY3NodG1s
+build_metadata.AdditionalFiles.CssScope = 
+
+[/Users/devtrisolusi/Downloads/SMRT_QC_Web/Views/Reports/Index.cshtml]
+build_metadata.AdditionalFiles.TargetPath = Vmlld3MvUmVwb3J0cy9JbmRleC5jc2h0bWw=
+build_metadata.AdditionalFiles.CssScope = 
+
+[/Users/devtrisolusi/Downloads/SMRT_QC_Web/Views/Shared/_Layout.cshtml]
+build_metadata.AdditionalFiles.TargetPath = Vmlld3MvU2hhcmVkL19MYXlvdXQuY3NodG1s
+build_metadata.AdditionalFiles.CssScope = 
+
+[/Users/devtrisolusi/Downloads/SMRT_QC_Web/Views/Shared/_Notifications.cshtml]
+build_metadata.AdditionalFiles.TargetPath = Vmlld3MvU2hhcmVkL19Ob3RpZmljYXRpb25zLmNzaHRtbA==
+build_metadata.AdditionalFiles.CssScope = 
+
+[/Users/devtrisolusi/Downloads/SMRT_QC_Web/Views/Shared/_ViewImports.cshtml]
+build_metadata.AdditionalFiles.TargetPath = Vmlld3MvU2hhcmVkL19WaWV3SW1wb3J0cy5jc2h0bWw=
+build_metadata.AdditionalFiles.CssScope = 
+
+[/Users/devtrisolusi/Downloads/SMRT_QC_Web/Views/Shared/_ViewStart.cshtml]
+build_metadata.AdditionalFiles.TargetPath = Vmlld3MvU2hhcmVkL19WaWV3U3RhcnQuY3NodG1s
+build_metadata.AdditionalFiles.CssScope = 
+
+[/Users/devtrisolusi/Downloads/SMRT_QC_Web/Views/Users/Index.cshtml]
+build_metadata.AdditionalFiles.TargetPath = Vmlld3MvVXNlcnMvSW5kZXguY3NodG1s
+build_metadata.AdditionalFiles.CssScope = 
+
+[/Users/devtrisolusi/Downloads/SMRT_QC_Web/Views/_ViewImports.cshtml]
+build_metadata.AdditionalFiles.TargetPath = Vmlld3MvX1ZpZXdJbXBvcnRzLmNzaHRtbA==
+build_metadata.AdditionalFiles.CssScope = 
+
+[/Users/devtrisolusi/Downloads/SMRT_QC_Web/Views/_ViewStart.cshtml]
+build_metadata.AdditionalFiles.TargetPath = Vmlld3MvX1ZpZXdTdGFydC5jc2h0bWw=
+build_metadata.AdditionalFiles.CssScope = 

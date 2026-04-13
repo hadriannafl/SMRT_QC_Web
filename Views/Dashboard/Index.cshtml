@@ -1,0 +1,208 @@
+@model SMRT_QC_Web.Models.ViewModels.DashboardViewModel
+@{
+    ViewData["Title"] = "Dashboard";
+}
+
+<!-- ═══════════════════════════════════════════════════════════════════════
+     STAT CARDS ROW
+════════════════════════════════════════════════════════════════════════ -->
+<div class="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+
+    <!-- Total Inspections -->
+    <div class="bg-white rounded-2xl p-5 shadow-sm border border-gray-100 hover:shadow-md transition-shadow">
+        <div class="flex items-center justify-between mb-3">
+            <div class="w-10 h-10 rounded-xl bg-blue-50 flex items-center justify-center">
+                <svg class="w-5 h-5 text-[#1A237E]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                          d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/>
+                </svg>
+            </div>
+        </div>
+        <p class="text-2xl font-bold text-gray-900">@Model.TotalInspections.ToString("N0")</p>
+        <p class="text-sm text-gray-500 mt-0.5">Total Inspeksi</p>
+    </div>
+
+    <!-- Pending CHECK -->
+    <div class="bg-white rounded-2xl p-5 shadow-sm border border-gray-100 hover:shadow-md transition-shadow">
+        <div class="flex items-center justify-between mb-3">
+            <div class="w-10 h-10 rounded-xl bg-yellow-50 flex items-center justify-center">
+                <svg class="w-5 h-5 text-yellow-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                          d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                </svg>
+            </div>
+        </div>
+        <p class="text-2xl font-bold text-gray-900">@Model.PendingInspections.ToString("N0")</p>
+        <p class="text-sm text-gray-500 mt-0.5">Menunggu Check</p>
+    </div>
+
+    <!-- Pending Validation -->
+    <div class="bg-white rounded-2xl p-5 shadow-sm border border-gray-100 hover:shadow-md transition-shadow">
+        <div class="flex items-center justify-between mb-3">
+            <div class="w-10 h-10 rounded-xl bg-purple-50 flex items-center justify-center">
+                <svg class="w-5 h-5 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                          d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                </svg>
+            </div>
+        </div>
+        <p class="text-2xl font-bold text-gray-900">@Model.PendingValidation.ToString("N0")</p>
+        <p class="text-sm text-gray-500 mt-0.5">Perlu Validasi</p>
+    </div>
+
+    <!-- Open NCNs -->
+    <div class="bg-white rounded-2xl p-5 shadow-sm border border-gray-100 hover:shadow-md transition-shadow">
+        <div class="flex items-center justify-between mb-3">
+            <div class="w-10 h-10 rounded-xl bg-red-50 flex items-center justify-center">
+                <svg class="w-5 h-5 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                          d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
+                </svg>
+            </div>
+        </div>
+        <p class="text-2xl font-bold text-gray-900">@Model.OpenNcns.ToString("N0")</p>
+        <p class="text-sm text-gray-500 mt-0.5">NCN Terbuka</p>
+    </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════════════════
+     MAIN CONTENT: Recent Inspections + Notification Panel
+════════════════════════════════════════════════════════════════════════ -->
+<div class="grid lg:grid-cols-3 gap-6">
+
+    <!-- Recent Inspections Table (2/3 width) -->
+    <div class="lg:col-span-2 bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
+        <div class="flex items-center justify-between px-5 py-4 border-b border-gray-100">
+            <h2 class="font-semibold text-gray-900">Inspeksi Terbaru</h2>
+            <a href="@Url.Action("Index","Inspection")"
+               class="text-xs text-[#1A237E] font-medium hover:underline">Lihat Semua →</a>
+        </div>
+
+        <div class="overflow-x-auto">
+            <table class="w-full text-sm">
+                <thead>
+                    <tr class="bg-gray-50">
+                        <th class="px-5 py-3 text-left text-xs text-gray-500 font-medium">Supply No</th>
+                        <th class="px-5 py-3 text-left text-xs text-gray-500 font-medium">Part</th>
+                        <th class="px-5 py-3 text-left text-xs text-gray-500 font-medium">Operator</th>
+                        <th class="px-5 py-3 text-left text-xs text-gray-500 font-medium">Status</th>
+                        <th class="px-5 py-3 text-left text-xs text-gray-500 font-medium">Tanggal</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-gray-50">
+                    @if (Model.RecentInspections.Count == 0)
+                    {
+                        <tr>
+                            <td colspan="5" class="px-5 py-8 text-center text-gray-400 text-sm">
+                                Belum ada data inspeksi
+                            </td>
+                        </tr>
+                    }
+                    @foreach (var item in Model.RecentInspections)
+                    {
+                        <tr class="hover:bg-gray-50 transition-colors">
+                            <td class="px-5 py-3">
+                                <a href="@Url.Action("Detail","Inspection", new { id = item.Id })"
+                                   class="font-medium text-[#1A237E] hover:underline">
+                                    @item.SupplyNumber
+                                </a>
+                            </td>
+                            <td class="px-5 py-3 text-gray-600">@(item.PartNumber ?? "-")</td>
+                            <td class="px-5 py-3 text-gray-600">@(item.Operator ?? "-")</td>
+                            <td class="px-5 py-3">
+                                <span class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium @item.StatusBadgeClass">
+                                    @(item.NcnStatus ?? "-")
+                                </span>
+                            </td>
+                            <td class="px-5 py-3 text-gray-500 text-xs">
+                                @item.CreatedAt.ToString("dd/MM/yyyy")
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- Right column: Notifications + Recent NCN -->
+    <div class="space-y-6">
+
+        <!-- Notification Panel -->
+        <div class="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
+            <div class="flex items-center justify-between px-5 py-4 border-b border-gray-100">
+                <div class="flex items-center gap-2">
+                    <h2 class="font-semibold text-gray-900">Notifikasi</h2>
+                    @if (Model.UnreadNotifications > 0)
+                    {
+                        <span class="bg-red-500 text-white text-xs font-bold px-2 py-0.5 rounded-full">
+                            @Model.UnreadNotifications
+                        </span>
+                    }
+                </div>
+            </div>
+
+            <div class="divide-y divide-gray-50 max-h-64 overflow-y-auto">
+                @if (Model.Notifications.Count == 0)
+                {
+                    <div class="py-6 text-center text-gray-400 text-sm">Tidak ada notifikasi baru</div>
+                }
+                @foreach (var notif in Model.Notifications)
+                {
+                    <div class="px-5 py-3">
+                        <p class="text-sm text-gray-800 line-clamp-2">@notif.Notif</p>
+                        <p class="text-xs text-gray-400 mt-1">@notif.TimeAgo</p>
+                    </div>
+                }
+            </div>
+        </div>
+
+        <!-- Recent NCN -->
+        <div class="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
+            <div class="flex items-center justify-between px-5 py-4 border-b border-gray-100">
+                <h2 class="font-semibold text-gray-900">NCN Terbaru</h2>
+                <a href="@Url.Action("Index","Ncn")" class="text-xs text-[#1A237E] font-medium hover:underline">
+                    Lihat Semua →
+                </a>
+            </div>
+            <div class="divide-y divide-gray-50">
+                @if (Model.RecentNcns.Count == 0)
+                {
+                    <div class="py-6 text-center text-gray-400 text-sm">Belum ada NCN</div>
+                }
+                @foreach (var ncn in Model.RecentNcns)
+                {
+                    <div class="px-5 py-3 flex items-center justify-between">
+                        <div>
+                            <p class="text-sm font-medium text-gray-800">@ncn.NcnNo</p>
+                            <p class="text-xs text-gray-400">@(ncn.PartNumber ?? "-")</p>
+                        </div>
+                        <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium @ncn.StatusBadgeClass">
+                            @ncn.Status
+                        </span>
+                    </div>
+                }
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+<script>
+    // SignalR connection for real-time dashboard updates
+    const hubConnection = new signalR.HubConnectionBuilder()
+        .withUrl("/notificationHub")
+        .withAutomaticReconnect([0, 2000, 5000, 10000])
+        .build();
+
+    // On receiving a notification, show a toast and refresh stats
+    hubConnection.on("ReceiveNotification", (data) => {
+        showToast(data.message, data.type || 'info');
+        // Reload the page after 2 seconds to refresh counters
+        setTimeout(() => {
+            const badge = document.querySelector('[x-ref="badge"]');
+        }, 500);
+    });
+
+    hubConnection.start().catch(err => console.warn('SignalR error:', err));
+</script>
+}

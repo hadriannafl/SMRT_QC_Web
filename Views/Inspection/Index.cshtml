@@ -1,0 +1,206 @@
+@model List<SMRT_QC_Web.Models.InspectionRecord>
+@{
+    ViewData["Title"] = "Inspeksi";
+}
+
+<!-- Filter Bar -->
+<div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-4 mb-5">
+    <form method="get" asp-action="Index" class="flex flex-wrap gap-3 items-end">
+        <div class="flex-1 min-w-[180px]">
+            <label class="block text-xs text-gray-500 mb-1">Cari</label>
+            <input type="text" name="search" value="@ViewBag.Search"
+                   placeholder="Supply No, PO, Operator..."
+                   class="w-full px-3 py-2 text-sm border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#1A237E]/20 focus:border-[#1A237E]" />
+        </div>
+        <div class="min-w-[140px]">
+            <label class="block text-xs text-gray-500 mb-1">Status</label>
+            <select name="status"
+                    class="w-full px-3 py-2 text-sm border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#1A237E]/20 focus:border-[#1A237E]">
+                <option value="">Semua Status</option>
+                <option value="CHECK" selected="@("CHECK" == ViewBag.StatusFilter?.ToString())">CHECK</option>
+                <option value="VALIDATION" selected="@("VALIDATION" == ViewBag.StatusFilter?.ToString())">VALIDATION</option>
+                <option value="MAKE NCN" selected="@("MAKE NCN" == ViewBag.StatusFilter?.ToString())">MAKE NCN</option>
+                <option value="DONE" selected="@("DONE" == ViewBag.StatusFilter?.ToString())">DONE</option>
+            </select>
+        </div>
+        <div class="min-w-[160px]">
+            <label class="block text-xs text-gray-500 mb-1">Part</label>
+            <select name="partNumber"
+                    class="w-full px-3 py-2 text-sm border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#1A237E]/20 focus:border-[#1A237E]">
+                <option value="">Semua Part</option>
+                @if (ViewBag.Parts is List<dynamic> parts)
+                {
+                    foreach (var p in parts)
+                    {
+                        <option value="@p.PartNumber" selected="@(p.PartNumber.ToString() == ViewBag.PartFilter?.ToString())">
+                            @p.PartNumber — @p.PartName
+                        </option>
+                    }
+                }
+            </select>
+        </div>
+        <div class="min-w-[130px]">
+            <label class="block text-xs text-gray-500 mb-1">Dari Tanggal</label>
+            <input type="date" name="dateFrom" value="@ViewBag.DateFrom"
+                   class="w-full px-3 py-2 text-sm border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#1A237E]/20 focus:border-[#1A237E]" />
+        </div>
+        <div class="min-w-[130px]">
+            <label class="block text-xs text-gray-500 mb-1">Sampai Tanggal</label>
+            <input type="date" name="dateTo" value="@ViewBag.DateTo"
+                   class="w-full px-3 py-2 text-sm border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#1A237E]/20 focus:border-[#1A237E]" />
+        </div>
+        <div class="flex gap-2">
+            <button type="submit"
+                    class="px-4 py-2 bg-[#1A237E] text-white text-sm font-medium rounded-xl hover:bg-[#283593] transition-colors">
+                Filter
+            </button>
+            <a href="@Url.Action("Index","Inspection")"
+               class="px-4 py-2 bg-gray-100 text-gray-600 text-sm font-medium rounded-xl hover:bg-gray-200 transition-colors">
+                Reset
+            </a>
+        </div>
+    </form>
+</div>
+
+<!-- Table Card -->
+<div class="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
+
+    <!-- Card header -->
+    <div class="flex items-center justify-between px-5 py-4 border-b border-gray-100">
+        <div>
+            <h2 class="font-semibold text-gray-900">Daftar Inspeksi</h2>
+            <p class="text-xs text-gray-400 mt-0.5">@ViewBag.TotalRecords rekord ditemukan</p>
+        </div>
+        <a href="@Url.Action("Create","Inspection")"
+           class="flex items-center gap-2 px-4 py-2 bg-[#1A237E] text-white text-sm font-medium rounded-xl hover:bg-[#283593] transition-colors">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
+            </svg>
+            Inspeksi Baru
+        </a>
+    </div>
+
+    <!-- Table -->
+    <div class="overflow-x-auto">
+        <table class="w-full text-sm">
+            <thead>
+                <tr class="bg-gray-50 border-b border-gray-100">
+                    <th class="px-5 py-3 text-left text-xs text-gray-500 font-medium">#</th>
+                    <th class="px-5 py-3 text-left text-xs text-gray-500 font-medium">Supply Number</th>
+                    <th class="px-5 py-3 text-left text-xs text-gray-500 font-medium">Supply Date</th>
+                    <th class="px-5 py-3 text-left text-xs text-gray-500 font-medium">Part Number</th>
+                    <th class="px-5 py-3 text-left text-xs text-gray-500 font-medium">PO Number</th>
+                    <th class="px-5 py-3 text-left text-xs text-gray-500 font-medium">Operator</th>
+                    <th class="px-5 py-3 text-left text-xs text-gray-500 font-medium">Status</th>
+                    <th class="px-5 py-3 text-left text-xs text-gray-500 font-medium">Checker</th>
+                    <th class="px-5 py-3 text-center text-xs text-gray-500 font-medium">Aksi</th>
+                </tr>
+            </thead>
+            <tbody class="divide-y divide-gray-50">
+                @if (!Model.Any())
+                {
+                    <tr>
+                        <td colspan="9" class="px-5 py-12 text-center text-gray-400">
+                            <svg class="w-10 h-10 mx-auto mb-3 text-gray-200" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"
+                                      d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2"/>
+                            </svg>
+                            <p class="text-sm">Tidak ada data inspeksi</p>
+                        </td>
+                    </tr>
+                }
+                @{ int rowNum = ((int)ViewBag.CurrentPage - 1) * 25 + 1; }
+                @foreach (var item in Model)
+                {
+                    <tr class="hover:bg-gray-50 transition-colors">
+                        <td class="px-5 py-3 text-gray-400 text-xs">@rowNum</td>
+                        <td class="px-5 py-3">
+                            <a href="@Url.Action("Detail","Inspection", new { id = item.Id })"
+                               class="font-medium text-[#1A237E] hover:underline">
+                                @item.SupplyNumber
+                            </a>
+                        </td>
+                        <td class="px-5 py-3 text-gray-600">
+                            @(item.SupplyDate?.ToString("dd/MM/yyyy") ?? "-")
+                        </td>
+                        <td class="px-5 py-3 text-gray-600">@(item.PartNumber ?? "-")</td>
+                        <td class="px-5 py-3 text-gray-600">@(item.PoNumber ?? "-")</td>
+                        <td class="px-5 py-3 text-gray-600">@(item.Operator ?? "-")</td>
+                        <td class="px-5 py-3">
+                            <span class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium @item.StatusBadgeClass">
+                                @(item.NcnStatus ?? "-")
+                            </span>
+                        </td>
+                        <td class="px-5 py-3 text-gray-600 text-xs">@(item.ChekName ?? "-")</td>
+                        <td class="px-5 py-3 text-center">
+                            <div class="flex items-center justify-center gap-1">
+                                <a href="@Url.Action("Detail","Inspection", new { id = item.Id })"
+                                   class="p-1.5 text-[#1A237E] hover:bg-blue-50 rounded-lg transition-colors" title="Detail">
+                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                              d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                              d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/>
+                                    </svg>
+                                </a>
+                                @if (User.IsInRole("ADMIN"))
+                                {
+                                    <button onclick="deleteInspection(@item.Id)"
+                                            class="p-1.5 text-red-400 hover:bg-red-50 rounded-lg transition-colors" title="Hapus">
+                                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                                  d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
+                                        </svg>
+                                    </button>
+                                }
+                            </div>
+                        </td>
+                    </tr>
+                    rowNum++;
+                }
+            </tbody>
+        </table>
+    </div>
+
+    <!-- Pagination -->
+    @if ((int)ViewBag.TotalPages > 1)
+    {
+        <div class="flex items-center justify-between px-5 py-3 border-t border-gray-100">
+            <p class="text-xs text-gray-500">
+                Halaman @ViewBag.CurrentPage dari @ViewBag.TotalPages
+            </p>
+            <div class="flex gap-1">
+                @for (int p = 1; p <= (int)ViewBag.TotalPages; p++)
+                {
+                    <a href="@Url.Action("Index","Inspection", new { page = p, search = ViewBag.Search, status = ViewBag.StatusFilter })"
+                       class="w-8 h-8 flex items-center justify-center rounded-lg text-xs font-medium
+                              @(p == (int)ViewBag.CurrentPage ? "bg-[#1A237E] text-white" : "text-gray-500 hover:bg-gray-100")">
+                        @p
+                    </a>
+                }
+            </div>
+        </div>
+    }
+</div>
+
+@section Scripts {
+<script>
+    // Hidden anti-forgery token for AJAX requests
+    const antiForgeryToken = '@Html.AntiForgeryToken()'.match(/value="([^"]+)"/)?.[1] ?? '';
+
+    async function deleteInspection(id) {
+        if (!confirm('Yakin ingin menghapus rekord inspeksi ini?')) return;
+        const res = await fetch(`/Inspection/Delete/${id}`, {
+            method: 'POST',
+            headers: { 'RequestVerificationToken': antiForgeryToken }
+        });
+        const data = await res.json();
+        if (data.success) {
+            showToast(data.message, 'success');
+            setTimeout(() => location.reload(), 800);
+        } else {
+            showToast(data.message, 'danger');
+        }
+    }
+</script>
+}

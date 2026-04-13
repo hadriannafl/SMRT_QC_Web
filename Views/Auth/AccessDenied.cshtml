@@ -1,0 +1,22 @@
+@{
+    ViewData["Title"] = "Akses Ditolak";
+    Layout = "_Layout";
+}
+
+<div class="flex flex-col items-center justify-center min-h-[60vh] text-center">
+    <div class="w-20 h-20 rounded-full bg-red-100 flex items-center justify-center mb-6">
+        <svg class="w-10 h-10 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                  d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636"/>
+        </svg>
+    </div>
+    <h1 class="text-2xl font-bold text-gray-900 mb-2">Akses Ditolak</h1>
+    <p class="text-gray-500 mb-6 max-w-sm">
+        Anda tidak memiliki izin untuk mengakses halaman ini.
+        Silakan hubungi administrator jika ini adalah kesalahan.
+    </p>
+    <a href="@Url.Action("Index","Dashboard")"
+       class="px-6 py-2.5 bg-[#1A237E] text-white rounded-xl font-medium hover:bg-[#283593] transition-colors">
+        Kembali ke Dashboard
+    </a>
+</div>

@@ -1,0 +1,210 @@
+@{
+    ViewData["Title"] = "Buat NCN Baru";
+    string supplyNumber = ViewBag.SupplyNumber ?? "";
+    string partNumber   = ViewBag.PartNumber ?? "";
+}
+
+<div class="max-w-4xl mx-auto space-y-6">
+
+    <!-- Header -->
+    <div class="flex items-center gap-3">
+        <a href="@Url.Action("Index","Ncn")" class="p-2 rounded-lg hover:bg-gray-100 text-gray-500">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/>
+            </svg>
+        </a>
+        <div>
+            <h2 class="text-xl font-bold text-gray-900">Buat NCN Baru</h2>
+            <p class="text-sm text-gray-500">Non-Conformance Notice — Laporan ketidaksesuaian</p>
+        </div>
+    </div>
+
+    <form method="post" action="@Url.Action("Create","Ncn")"
+          enctype="multipart/form-data" x-data="ncnForm()">
+        @Html.AntiForgeryToken()
+
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+
+            <!-- ── Left: Form Data ──────────────────────────────── -->
+            <div class="space-y-5">
+
+                <div class="card">
+                    <div class="card-header">📋 Data NCN</div>
+
+                    <div class="form-group">
+                        <label class="form-label">NCN Number *</label>
+                        <input name="NcnNo" class="form-input" required
+                               placeholder="NCN-2024-001" style="text-transform:uppercase"
+                               value="NCN-@DateTime.Now.ToString("yyyyMMdd")-" />
+                    </div>
+
+                    <div class="grid grid-cols-2 gap-4">
+                        <div class="form-group">
+                            <label class="form-label">Supply Number *</label>
+                            <input name="SupplyNumber" class="form-input" required
+                                   value="@supplyNumber" style="text-transform:uppercase" />
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Part Number *</label>
+                            <input name="PartNumber" class="form-input" required
+                                   value="@partNumber" style="text-transform:uppercase" />
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label">Jenis Defect *</label>
+                        <select name="DefectType" class="form-input" required>
+                            <option value="">— Pilih —</option>
+                            <option>DIMENSIONAL</option>
+                            <option>VISUAL</option>
+                            <option>FUNCTIONAL</option>
+                            <option>MATERIAL</option>
+                            <option>MARKING / LABEL</option>
+                            <option>PACKAGING</option>
+                            <option>OTHER</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label">Jumlah NG *</label>
+                        <input name="DefectQty" type="number" min="1" class="form-input"
+                               required placeholder="0" />
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label">Deskripsi Defect *</label>
+                        <textarea name="DefectDescription" class="form-input" rows="3"
+                                  required placeholder="Deskripsikan ketidaksesuaian secara detail..."></textarea>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label">Nama Checker *</label>
+                        <input name="CheckerName" class="form-input" required
+                               value="@User.Identity?.Name" style="text-transform:uppercase" />
+                    </div>
+
+                    <input type="hidden" name="PhotoData" id="photo-data" />
+                </div>
+            </div>
+
+            <!-- ── Right: Camera ───────────────────────────────── -->
+            <div class="space-y-5">
+
+                <div class="card">
+                    <div class="card-header">📷 Foto Defect</div>
+                    <p class="text-sm text-gray-500 mb-4">
+                        Gunakan kamera untuk mengambil foto langsung, atau upload file gambar.
+                    </p>
+
+                    <!-- Tab: Kamera vs Upload -->
+                    <div class="flex gap-2 mb-4" x-data>
+                        <button type="button" class="btn btn-sm"
+                                :class="cameraMode ? 'btn-primary' : 'btn-outline'"
+                                @@click="switchMode('camera')">
+                            📷 Kamera Langsung
+                        </button>
+                        <button type="button" class="btn btn-sm"
+                                :class="!cameraMode ? 'btn-primary' : 'btn-outline'"
+                                @@click="switchMode('upload')">
+                            📁 Upload File
+                        </button>
+                    </div>
+
+                    <!-- Camera mode -->
+                    <div x-show="cameraMode">
+                        <video id="camera-preview" autoplay playsinline
+                               class="w-full rounded-xl bg-gray-900 aspect-[4/3] object-cover mb-3"></video>
+                        <canvas id="camera-canvas" class="hidden"></canvas>
+
+                        <div class="flex items-center justify-center gap-4">
+                            <button type="button" @@click="startCamera()" class="btn btn-outline btn-sm">
+                                ▶ Mulai Kamera
+                            </button>
+                            <button type="button" @@click="capture()"
+                                    class="camera-capture-btn"
+                                    title="Ambil foto" x-show="cameraStarted">
+                            </button>
+                            <button type="button" @@click="stopCamera()" class="btn btn-outline btn-sm"
+                                    x-show="cameraStarted">
+                                ⏹ Stop
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Upload mode -->
+                    <div x-show="!cameraMode">
+                        <input type="file" name="PhotoFile" accept="image/*"
+                               class="form-input" @@change="previewUpload($event)" />
+                    </div>
+
+                    <!-- Photo preview -->
+                    <div class="mt-4" x-show="photoPreview">
+                        <p class="text-xs text-gray-500 mb-2 font-semibold uppercase tracking-wide">Preview Foto:</p>
+                        <img id="photo-preview" :src="photoPreview"
+                             class="w-full rounded-xl object-cover max-h-64 border border-gray-200" />
+                        <button type="button" @@click="clearPhoto()"
+                                class="mt-2 text-xs text-red-500 hover:text-red-700">
+                            Hapus foto
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Actions -->
+        <div class="flex items-center justify-end gap-3">
+            <a href="@Url.Action("Index","Ncn")" class="btn btn-outline">Batal</a>
+            <button type="submit" class="btn btn-danger">
+                ⚠️ Buat NCN
+            </button>
+        </div>
+    </form>
+</div>
+
+@section Scripts {
+<script>
+function ncnForm() {
+    return {
+        cameraMode: true,
+        cameraStarted: false,
+        photoPreview: null,
+
+        switchMode(mode) {
+            this.cameraMode = (mode === 'camera');
+            if (!this.cameraMode) Camera.stop();
+        },
+
+        async startCamera() {
+            const ok = await Camera.start('camera-preview');
+            if (ok) this.cameraStarted = true;
+        },
+
+        capture() {
+            Camera.capture('camera-preview', 'camera-canvas', 'photo-preview', 'photo-data');
+            // Sync Alpine preview
+            const img = document.getElementById('photo-preview');
+            if (img) this.photoPreview = img.src;
+        },
+
+        stopCamera() {
+            Camera.stop();
+            this.cameraStarted = false;
+        },
+
+        previewUpload(event) {
+            const file = event.target.files?.[0];
+            if (!file) return;
+            const reader = new FileReader();
+            reader.onload = (e) => { this.photoPreview = e.target.result; };
+            reader.readAsDataURL(file);
+        },
+
+        clearPhoto() {
+            this.photoPreview = null;
+            document.getElementById('photo-data').value = '';
+            document.getElementById('photo-preview').src = '';
+        }
+    };
+}
+</script>
+}

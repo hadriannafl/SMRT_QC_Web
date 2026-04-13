@@ -1,0 +1,174 @@
+@model SMRT_QC_Web.Models.InspectionRecord
+@{
+    ViewData["Title"] = "Input Inspeksi Baru";
+    var parts = ViewBag.Parts as List<SMRT_QC_Web.Models.Part> ?? new();
+}
+
+<div class="max-w-4xl mx-auto space-y-6">
+
+    <!-- Header -->
+    <div class="flex items-center gap-3">
+        <a href="@Url.Action("Index","Inspection")" class="p-2 rounded-lg hover:bg-gray-100 text-gray-500">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/>
+            </svg>
+        </a>
+        <div>
+            <h2 class="text-xl font-bold text-gray-900">Input Inspeksi Baru</h2>
+            <p class="text-sm text-gray-500">Isi data PO / Supply untuk inspeksi incoming</p>
+        </div>
+    </div>
+
+    <form method="post" action="@Url.Action("Create","Inspection")" x-data="inspectionForm()">
+        @Html.AntiForgeryToken()
+
+        <!-- ── Supply Information ─────────────────────────────── -->
+        <div class="card">
+            <div class="card-header">📦 Informasi Supply</div>
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+
+                <div class="form-group">
+                    <label class="form-label" asp-for="SupplyNumber">Supply Number *</label>
+                    <input asp-for="SupplyNumber" class="form-input" placeholder="Contoh: SN-2024-001"
+                           style="text-transform:uppercase" required />
+                    <span asp-validation-for="SupplyNumber" class="text-red-500 text-xs"></span>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label" asp-for="SupplyDate">Tanggal Supply *</label>
+                    <input asp-for="SupplyDate" type="date" class="form-input" required />
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label" asp-for="PoNumber">PO Number</label>
+                    <input asp-for="PoNumber" class="form-input" placeholder="Nomor Purchase Order" />
+                </div>
+            </div>
+        </div>
+
+        <!-- ── Line Items ─────────────────────────────────────── -->
+        <div class="card">
+            <div class="flex items-center justify-between mb-4">
+                <div class="card-header mb-0 border-0 pb-0">📋 Daftar Item Inspeksi</div>
+                <button type="button" @@click="addLine()" class="btn btn-blue btn-sm">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
+                    </svg>
+                    Tambah Baris
+                </button>
+            </div>
+
+            <div class="overflow-x-auto">
+                <table class="tbl">
+                    <thead>
+                        <tr>
+                            <th style="width:50px">No</th>
+                            <th>Part Number</th>
+                            <th>Operator</th>
+                            <th>Item Category</th>
+                            <th style="width:50px">Hapus</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <!-- Template baris (tersembunyi) -->
+                        <template id="line-template">
+                            <tr class="line-row">
+                                <td class="line-num text-center text-gray-500 font-mono text-sm"></td>
+                                <td>
+                                    <select name="lines[INDEX][PartNumber]" class="form-input" required>
+                                        <option value="">— Pilih Part —</option>
+                                        @foreach (var p in parts)
+                                        {
+                                            <option value="@p.PartNumber">@p.PartNumber — @p.PartName</option>
+                                        }
+                                    </select>
+                                </td>
+                                <td>
+                                    <input name="lines[INDEX][Operator]" class="form-input"
+                                           placeholder="Nama operator" style="text-transform:uppercase" />
+                                </td>
+                                <td>
+                                    <input name="lines[INDEX][ItemCategory]" class="form-input"
+                                           placeholder="Kategori item" />
+                                </td>
+                                <td class="text-center">
+                                    <button type="button" @@click="removeLine($el)" class="text-red-400 hover:text-red-600 p-1">
+                                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
+                                        </svg>
+                                    </button>
+                                </td>
+                            </tr>
+                        </template>
+
+                        <!-- Baris akan ditambah via Alpine.js -->
+                        <tbody id="lines-tbody">
+                            <tr id="empty-row">
+                                <td colspan="5" class="tbl-empty">
+                                    Belum ada baris — klik "Tambah Baris" untuk memulai
+                                </td>
+                            </tr>
+                        </tbody>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- ── Actions ───────────────────────────────────────── -->
+        <div class="flex items-center justify-end gap-3">
+            <a href="@Url.Action("Index","Inspection")" class="btn btn-outline">Batal</a>
+            <button type="submit" class="btn btn-primary">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+                </svg>
+                Simpan Inspeksi
+            </button>
+        </div>
+    </form>
+</div>
+
+@section Scripts {
+<script>
+function inspectionForm() {
+    return {
+        lineCount: 0,
+
+        addLine() {
+            const template = document.getElementById('line-template');
+            const tbody    = document.getElementById('lines-tbody');
+            const empty    = document.getElementById('empty-row');
+            if (empty) empty.remove();
+
+            // Clone template content
+            const clone = template.content.cloneNode(true);
+            const idx   = this.lineCount++;
+
+            // Replace INDEX placeholder in names
+            clone.querySelectorAll('[name]').forEach(el => {
+                el.name = el.name.replace('INDEX', idx);
+            });
+
+            tbody.appendChild(clone);
+            this.renumberLines();
+        },
+
+        removeLine(btn) {
+            btn.closest('tr').remove();
+            this.lineCount = Math.max(0, this.lineCount - 1);
+            this.renumberLines();
+            if (document.querySelectorAll('.line-row').length === 0) {
+                const tbody = document.getElementById('lines-tbody');
+                tbody.innerHTML = '<tr id="empty-row"><td colspan="5" class="tbl-empty">Belum ada baris — klik "Tambah Baris" untuk memulai</td></tr>';
+            }
+        },
+
+        renumberLines() {
+            document.querySelectorAll('.line-row').forEach((row, i) => {
+                const numCell = row.querySelector('.line-num');
+                if (numCell) numCell.textContent = i + 1;
+            });
+        }
+    };
+}
+</script>
+}

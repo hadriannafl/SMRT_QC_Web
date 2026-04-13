@@ -1,0 +1,128 @@
+@model IEnumerable<SMRT_QC_Web.Models.NcnRecord>
+@{
+    ViewData["Title"] = "NCN — Non-Conformance Notice";
+}
+
+<div class="space-y-5">
+
+    <!-- Header -->
+    <div class="flex items-center justify-between">
+        <div>
+            <h2 class="text-xl font-bold text-gray-900">Non-Conformance Notice (NCN)</h2>
+            <p class="text-sm text-gray-500">Daftar laporan ketidaksesuaian produk</p>
+        </div>
+        <a href="@Url.Action("Create","Ncn")" class="btn btn-danger">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
+            </svg>
+            Buat NCN
+        </a>
+    </div>
+
+    <!-- Stats row -->
+    @{
+        var total   = Model.Count();
+        var check   = Model.Count(n => n.Status == "CHECK");
+        var process = Model.Count(n => n.Status == "PROCESS");
+        var done    = Model.Count(n => n.Status == "DONE");
+    }
+    <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+        <div class="card text-center py-4">
+            <p class="text-2xl font-bold text-gray-900">@total</p>
+            <p class="text-xs text-gray-500 mt-1 uppercase tracking-wide">Total NCN</p>
+        </div>
+        <div class="card text-center py-4">
+            <p class="text-2xl font-bold text-yellow-600">@check</p>
+            <p class="text-xs text-gray-500 mt-1 uppercase tracking-wide">Perlu Check</p>
+        </div>
+        <div class="card text-center py-4">
+            <p class="text-2xl font-bold text-purple-600">@process</p>
+            <p class="text-xs text-gray-500 mt-1 uppercase tracking-wide">Dalam Proses</p>
+        </div>
+        <div class="card text-center py-4">
+            <p class="text-2xl font-bold text-green-600">@done</p>
+            <p class="text-xs text-gray-500 mt-1 uppercase tracking-wide">Selesai</p>
+        </div>
+    </div>
+
+    <!-- Search + Filter -->
+    <div class="card py-3 flex flex-wrap gap-3 items-center">
+        <input type="text" placeholder="🔍  Cari NCN No, supply, atau part..."
+               class="form-input" style="max-width:320px"
+               oninput="tableSearch(this, 'ncn-table')" />
+        <form method="get" class="flex gap-2">
+            <select name="status" class="form-input" style="width:160px" onchange="this.form.submit()">
+                <option value="">Semua Status</option>
+                <option value="CHECK"   selected="@((string)ViewBag.StatusFilter == "CHECK"   ? "selected" : null)">CHECK</option>
+                <option value="PROCESS" selected="@((string)ViewBag.StatusFilter == "PROCESS" ? "selected" : null)">PROCESS</option>
+                <option value="DONE"    selected="@((string)ViewBag.StatusFilter == "DONE"    ? "selected" : null)">DONE</option>
+            </select>
+        </form>
+    </div>
+
+    <!-- Table -->
+    <div class="card p-0 overflow-hidden">
+        <table class="tbl" id="ncn-table">
+            <thead>
+                <tr>
+                    <th>NCN No</th>
+                    <th>Supply No</th>
+                    <th>Part</th>
+                    <th>Jenis Defect</th>
+                    <th class="text-right">Qty NG</th>
+                    <th>Checker</th>
+                    <th>Status</th>
+                    <th>Tanggal</th>
+                    <th class="text-center">Aksi</th>
+                </tr>
+            </thead>
+            <tbody>
+                @if (!Model.Any())
+                {
+                    <tr><td colspan="9" class="tbl-empty">Tidak ada data NCN.</td></tr>
+                }
+                @foreach (var n in Model)
+                {
+                    var badgeClass = n.Status switch {
+                        "CHECK"   => "badge-check",
+                        "PROCESS" => "badge-process",
+                        "DONE"    => "badge-done",
+                        _         => "badge-default"
+                    };
+                    <tr>
+                        <td class="font-mono font-semibold text-[#1A237E]">@n.NcnNo</td>
+                        <td class="text-gray-700">@n.SupplyNumber</td>
+                        <td class="font-mono text-sm">@n.PartNumber</td>
+                        <td><span class="badge badge-makencn">@n.DefectType</span></td>
+                        <td class="text-right font-semibold text-red-600">@n.DefectQty</td>
+                        <td class="text-gray-600 text-sm">@n.CheckerName</td>
+                        <td><span class="badge @badgeClass">@n.Status</span></td>
+                        <td class="text-gray-500 text-sm">@n.CreatedAt.ToString("dd MMM yyyy")</td>
+                        <td>
+                            <div class="flex items-center justify-center gap-1">
+                                <!-- View photo if available -->
+                                @if (!string.IsNullOrEmpty(n.PhotoPath))
+                                {
+                                    <a href="/uploads/@n.PhotoPath" target="_blank"
+                                       class="btn btn-outline btn-sm" title="Lihat Foto">📷</a>
+                                }
+                                @if (n.Status != "DONE" && (User.IsInRole("SUPERVISOR") || User.IsInRole("ADMIN") || User.IsInRole("MANAGER")))
+                                {
+                                    <form method="post" action="@Url.Action("Approve","Ncn", new {id = n.Id})">
+                                        @Html.AntiForgeryToken()
+                                        <button type="submit" class="btn btn-success btn-sm">Approve</button>
+                                    </form>
+                                }
+                                <form method="post" action="@Url.Action("Delete","Ncn", new {id = n.Id})"
+                                      onsubmit="return confirmDelete('NCN @n.NcnNo')">
+                                    @Html.AntiForgeryToken()
+                                    <button type="submit" class="btn btn-danger btn-sm">Hapus</button>
+                                </form>
+                            </div>
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+</div>

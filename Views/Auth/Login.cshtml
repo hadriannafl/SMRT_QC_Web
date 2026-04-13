@@ -1,0 +1,193 @@
+@model SMRT_QC_Web.Models.ViewModels.LoginViewModel
+@{
+    Layout = null; // Login uses its own full-page layout (no sidebar)
+    ViewData["Title"] = "Login — SmartIQC";
+}
+<!DOCTYPE html>
+<html lang="id" class="h-full">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>@ViewData["Title"]</title>
+    <!-- TailwindCSS — compiled locally (do not use CDN in production) -->
+    <link rel="stylesheet" href="~/css/tailwind.css" asp-append-version="true" />
+    <!-- Alpine.js — served locally (no external CDN request) -->
+    <script defer src="~/js/alpine.min.js" asp-append-version="true"></script>
+    <style>
+        /* Use system font stack — no external font request needed */
+        body { font-family: 'Segoe UI', system-ui, -apple-system, sans-serif; }
+        /* Animated gradient background for the left panel */
+        .navy-gradient {
+            background: linear-gradient(135deg, #1A237E 0%, #283593 50%, #1565C0 100%);
+        }
+        /* Floating animation for decoration circles */
+        @@keyframes float {
+            0%, 100% { transform: translateY(0px); }
+            50% { transform: translateY(-12px); }
+        }
+        .float-slow { animation: float 6s ease-in-out infinite; }
+        .float-medium { animation: float 4s ease-in-out infinite 1s; }
+    </style>
+</head>
+<body class="h-full bg-gray-50">
+
+<div class="flex h-full">
+
+    <!-- ── LEFT PANEL: Branding (Dark Navy) ──────────────────────────────── -->
+    <div class="hidden lg:flex lg:w-1/2 navy-gradient flex-col items-center justify-center relative overflow-hidden">
+
+        <!-- Decorative circles -->
+        <div class="absolute top-10 left-10 w-48 h-48 rounded-full bg-white/5 float-slow"></div>
+        <div class="absolute bottom-20 right-10 w-32 h-32 rounded-full bg-white/5 float-medium"></div>
+        <div class="absolute top-1/2 right-0 w-24 h-24 rounded-full bg-blue-400/10"></div>
+
+        <div class="relative z-10 text-center px-12">
+            <!-- Logo mark -->
+            <div class="w-24 h-24 rounded-full bg-white/15 backdrop-blur flex items-center justify-center mx-auto mb-6 shadow-xl overflow-hidden">
+                <img src="~/images/sakailogo.png" alt="Sakai Logo" class="w-full h-full object-cover" />
+            </div>
+            <h1 class="text-4xl font-bold text-white mb-3">SmartIQC</h1>
+            <p class="text-blue-200 text-lg mb-2">Quality Control System</p>
+            <p class="text-blue-300/70 text-sm max-w-xs mx-auto leading-relaxed">
+                Sistem manajemen inspeksi kualitas terpadu untuk proses QC yang lebih efisien dan terukur.
+            </p>
+
+            <!-- Feature badges -->
+            <div class="mt-10 flex flex-col gap-3">
+                <div class="flex items-center gap-3 bg-white/10 rounded-xl px-4 py-3">
+                    <div class="w-8 h-8 rounded-lg bg-white/20 flex items-center justify-center shrink-0">
+                        <svg class="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/>
+                        </svg>
+                    </div>
+                    <span class="text-white/90 text-sm">Real-time notification via SignalR</span>
+                </div>
+                <div class="flex items-center gap-3 bg-white/10 rounded-xl px-4 py-3">
+                    <div class="w-8 h-8 rounded-lg bg-white/20 flex items-center justify-center shrink-0">
+                        <svg class="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z"/>
+                        </svg>
+                    </div>
+                    <span class="text-white/90 text-sm">Foto defect langsung dari browser</span>
+                </div>
+                <div class="flex items-center gap-3 bg-white/10 rounded-xl px-4 py-3">
+                    <div class="w-8 h-8 rounded-lg bg-white/20 flex items-center justify-center shrink-0">
+                        <svg class="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+                        </svg>
+                    </div>
+                    <span class="text-white/90 text-sm">Laporan & Export Excel</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ── RIGHT PANEL: Login Form ────────────────────────────────────────── -->
+    <div class="w-full lg:w-1/2 flex items-center justify-center p-8 bg-white">
+        <div class="w-full max-w-md">
+
+            <!-- Mobile logo (shown only on mobile) -->
+            <div class="lg:hidden text-center mb-8">
+                <div class="w-14 h-14 rounded-full overflow-hidden mx-auto mb-3">
+                    <img src="~/images/sakailogo.png" alt="Sakai Logo" class="w-full h-full object-cover" />
+                </div>
+                <h1 class="text-2xl font-bold text-gray-900">SmartIQC</h1>
+            </div>
+
+            <h2 class="text-2xl font-bold text-gray-900 mb-1">Selamat Datang</h2>
+            <p class="text-gray-500 text-sm mb-8">Masuk ke akun SmartIQC Anda</p>
+
+            <!-- Validation summary -->
+            @if (!ViewData.ModelState.IsValid)
+            {
+                <div class="mb-4 bg-red-50 border border-red-200 rounded-xl px-4 py-3">
+                    <div asp-validation-summary="All" class="text-sm text-red-700"></div>
+                </div>
+            }
+
+            <form method="post" asp-action="Login" asp-controller="Auth"
+                  asp-route-returnUrl="@ViewBag.ReturnUrl" class="space-y-5">
+                @Html.AntiForgeryToken()
+
+                <!-- Username -->
+                <div>
+                    <label asp-for="UserName" class="block text-sm font-medium text-gray-700 mb-1.5"></label>
+                    <div class="relative">
+                        <div class="absolute inset-y-0 left-3 flex items-center pointer-events-none">
+                            <svg class="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                      d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/>
+                            </svg>
+                        </div>
+                        <input asp-for="UserName" type="text" autocomplete="username"
+                               class="w-full pl-10 pr-4 py-3 border border-gray-200 rounded-xl text-sm
+                                      focus:outline-none focus:ring-2 focus:ring-[#1A237E]/30 focus:border-[#1A237E]
+                                      transition-colors bg-gray-50 focus:bg-white"
+                               placeholder="Masukkan username" />
+                    </div>
+                    <span asp-validation-for="UserName" class="text-red-500 text-xs mt-1 block"></span>
+                </div>
+
+                <!-- Password -->
+                <div>
+                    <label asp-for="Password" class="block text-sm font-medium text-gray-700 mb-1.5"></label>
+                    <div class="relative">
+                        <div class="absolute inset-y-0 left-3 flex items-center pointer-events-none">
+                            <svg class="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                      d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/>
+                            </svg>
+                        </div>
+                        <input asp-for="Password"
+                               :type="showPassword ? 'text' : 'password'"
+                               autocomplete="current-password"
+                               class="w-full pl-10 pr-12 py-3 border border-gray-200 rounded-xl text-sm
+                                      focus:outline-none focus:ring-2 focus:ring-[#1A237E]/30 focus:border-[#1A237E]
+                                      transition-colors bg-gray-50 focus:bg-white"
+                               placeholder="Masukkan password" />
+                        <!-- Toggle show/hide password -->
+                        <button type="button" onclick="togglePassword(this)"
+                                class="absolute inset-y-0 right-3 flex items-center text-gray-400 hover:text-gray-600">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                      d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                      d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/>
+                            </svg>
+                        </button>
+                    </div>
+                    <span asp-validation-for="Password" class="text-red-500 text-xs mt-1 block"></span>
+                </div>
+
+                <!-- Remember Me -->
+                <div class="flex items-center">
+                    <input asp-for="RememberMe" type="checkbox" id="rememberMe"
+                           class="w-4 h-4 text-[#1A237E] border-gray-300 rounded focus:ring-[#1A237E]" />
+                    <label for="rememberMe" class="ml-2 text-sm text-gray-600">Ingat saya selama 7 hari</label>
+                </div>
+
+                <!-- Submit button -->
+                <button type="submit"
+                        class="w-full py-3 bg-[#1A237E] hover:bg-[#283593] text-white font-semibold rounded-xl
+                               transition-all duration-150 flex items-center justify-center
+                               focus:outline-none focus:ring-2 focus:ring-[#1A237E] focus:ring-offset-2">
+                    Masuk
+                </button>
+            </form>
+
+            <p class="text-center text-xs text-gray-400 mt-8">
+                SmartIQC v1.0.0 &copy; @DateTime.Now.Year
+            </p>
+        </div>
+    </div>
+</div>
+
+<script>
+    // Toggle show/hide password
+    function togglePassword(btn) {
+        var input = btn.closest('div').querySelector('input');
+        input.type = input.type === 'password' ? 'text' : 'password';
+    }
+</script>
+</body>
+</html>

@@ -1,0 +1,158 @@
+@model SMRT_QC_Web.Models.InspectionRecord
+@{
+    ViewData["Title"] = "Detail Inspeksi — " + Model.SupplyNumber;
+}
+
+<div class="max-w-5xl mx-auto space-y-6">
+
+    <!-- Header -->
+    <div class="flex items-center justify-between">
+        <div class="flex items-center gap-3">
+            <a href="@Url.Action("Index","Inspection")" class="p-2 rounded-lg hover:bg-gray-100 text-gray-500">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/>
+                </svg>
+            </a>
+            <div>
+                <h2 class="text-xl font-bold text-gray-900">@Model.SupplyNumber</h2>
+                <p class="text-sm text-gray-500">
+                    PO: @(Model.PoNumber ?? "—") &nbsp;|&nbsp;
+                    Tanggal: @Model.SupplyDate?.ToString("dd MMM yyyy")
+                </p>
+            </div>
+        </div>
+        <!-- Status badge -->
+        <span class="badge @Model.StatusBadgeClass">@Model.NcnStatus</span>
+    </div>
+
+    <!-- ── Info Cards Row ──────────────────────────────────────── -->
+    <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+        <div class="card text-center py-4">
+            <p class="text-xs text-gray-500 uppercase tracking-wide mb-1">Part Number</p>
+            <p class="font-bold text-gray-900">@(Model.PartNumber ?? "—")</p>
+        </div>
+        <div class="card text-center py-4">
+            <p class="text-xs text-gray-500 uppercase tracking-wide mb-1">Operator</p>
+            <p class="font-bold text-gray-900">@(Model.Operator ?? "—")</p>
+        </div>
+        <div class="card text-center py-4">
+            <p class="text-xs text-gray-500 uppercase tracking-wide mb-1">Checker</p>
+            <p class="font-bold text-gray-900">@(Model.ChekName ?? "—")</p>
+        </div>
+        <div class="card text-center py-4">
+            <p class="text-xs text-gray-500 uppercase tracking-wide mb-1">Approver</p>
+            <p class="font-bold text-gray-900">@(Model.AppvName ?? "—")</p>
+        </div>
+    </div>
+
+    <!-- ── Workflow Actions ────────────────────────────────────── -->
+    <div class="card" x-data="{ showValidate: false, showNcn: false }">
+        <div class="card-header">⚙️ Tindakan</div>
+
+        <div class="flex flex-wrap gap-3">
+
+            @* CHECK IN — Operator mengisi data *@
+            @if (Model.NcnStatus == "CHECK" && User.IsInRole("STAFF") || User.IsInRole("SUPERVISOR") || User.IsInRole("ADMIN") || User.IsInRole("MANAGER"))
+            {
+                <form method="post" action="@Url.Action("CheckIn","Inspection", new {id = Model.Id})">
+                    @Html.AntiForgeryToken()
+                    <button type="submit" class="btn btn-blue"
+                            onclick="return confirm('Tandai sebagai sudah diperiksa oleh operator?')">
+                        ✅ Tandai CHECK
+                    </button>
+                </form>
+            }
+
+            @* VALIDATE — Supervisor/Admin approve *@
+            @if ((Model.NcnStatus == "VALIDATION") && (User.IsInRole("SUPERVISOR") || User.IsInRole("ADMIN") || User.IsInRole("MANAGER")))
+            {
+                <button type="button" class="btn btn-success" @@click="showValidate = true">
+                    🔍 Validasi
+                </button>
+            }
+
+            @* CREATE NCN *@
+            @if (Model.NcnStatus == "MAKE NCN" && (User.IsInRole("SUPERVISOR") || User.IsInRole("ADMIN")))
+            {
+                <a href="@Url.Action("Create","Ncn", new { supplyNumber = Model.SupplyNumber, partNumber = Model.PartNumber })"
+                   class="btn btn-danger">
+                    ⚠️ Buat NCN
+                </a>
+            }
+
+            @* PRINT *@
+            <a href="@Url.Action("Print","Reports", new { supplyNumber = Model.SupplyNumber })"
+               target="_blank" class="btn btn-outline">
+                🖨️ Print
+            </a>
+        </div>
+
+        <!-- Validation modal -->
+        <div class="modal-backdrop" x-show="showValidate" x-cloak>
+            <div class="modal-box max-w-md p-6" @@click.stop>
+                <h3 class="text-lg font-bold text-gray-900 mb-4">Validasi Inspeksi</h3>
+                <form method="post" action="@Url.Action("Validate","Inspection", new {id = Model.Id})">
+                    @Html.AntiForgeryToken()
+                    <div class="form-group">
+                        <label class="form-label">Hasil Validasi</label>
+                        <select name="validasi" class="form-input" required>
+                            <option value="">— Pilih —</option>
+                            <option value="APPROVED">APPROVED</option>
+                            <option value="REJECTED">REJECTED</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Nama Approver</label>
+                        <input name="appvName" class="form-input" value="@User.Identity?.Name"
+                               style="text-transform:uppercase" required />
+                    </div>
+                    <div class="flex gap-3 justify-end mt-4">
+                        <button type="button" class="btn btn-outline" @@click="showValidate = false">Batal</button>
+                        <button type="submit" class="btn btn-success">Simpan Validasi</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- ── History / Detail Info ───────────────────────────────── -->
+    <div class="card">
+        <div class="card-header">📄 Detail Lengkap</div>
+        <dl class="grid grid-cols-1 sm:grid-cols-2 gap-x-8 gap-y-3 text-sm">
+            <div class="flex justify-between py-2 border-b border-gray-100">
+                <dt class="text-gray-500">Supply Number</dt>
+                <dd class="font-medium text-gray-900">@Model.SupplyNumber</dd>
+            </div>
+            <div class="flex justify-between py-2 border-b border-gray-100">
+                <dt class="text-gray-500">PO Number</dt>
+                <dd class="font-medium text-gray-900">@(Model.PoNumber ?? "—")</dd>
+            </div>
+            <div class="flex justify-between py-2 border-b border-gray-100">
+                <dt class="text-gray-500">Part Number</dt>
+                <dd class="font-medium text-gray-900">@(Model.PartNumber ?? "—")</dd>
+            </div>
+            <div class="flex justify-between py-2 border-b border-gray-100">
+                <dt class="text-gray-500">Item Category</dt>
+                <dd class="font-medium text-gray-900">@(Model.ItemCategory ?? "—")</dd>
+            </div>
+            <div class="flex justify-between py-2 border-b border-gray-100">
+                <dt class="text-gray-500">NCN No</dt>
+                <dd class="font-medium @(Model.NcnNo != null ? "text-red-600" : "text-gray-400")">
+                    @(Model.NcnNo ?? "Tidak ada NCN")
+                </dd>
+            </div>
+            <div class="flex justify-between py-2 border-b border-gray-100">
+                <dt class="text-gray-500">Validasi</dt>
+                <dd class="font-medium text-gray-900">@(Model.Validasi ?? "Belum divalidasi")</dd>
+            </div>
+            <div class="flex justify-between py-2 border-b border-gray-100">
+                <dt class="text-gray-500">Dibuat</dt>
+                <dd class="text-gray-600">@Model.CreatedAt.ToString("dd MMM yyyy HH:mm")</dd>
+            </div>
+            <div class="flex justify-between py-2 border-b border-gray-100">
+                <dt class="text-gray-500">Diperbarui</dt>
+                <dd class="text-gray-600">@Model.UpdatedAt.ToString("dd MMM yyyy HH:mm")</dd>
+            </div>
+        </dl>
+    </div>
+</div>
