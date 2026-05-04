@@ -1,5 +1,6 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.AspNetCore.Authentication.Cookies;
+using Microsoft.AspNetCore.HttpOverrides;
 using SMRT_QC_Web.Data;
 using SMRT_QC_Web.Hubs;
 using SMRT_QC_Web.Models;
@@ -94,6 +95,12 @@ builder.Services.AddHttpContextAccessor();
 var app = builder.Build();
 
 // ─── Middleware pipeline ──────────────────────────────────────────────────────
+// Trust Railway's reverse proxy so antiforgery tokens use the correct https scheme.
+app.UseForwardedHeaders(new ForwardedHeadersOptions
+{
+    ForwardedHeaders = ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto
+});
+
 if (app.Environment.IsDevelopment())
 {
     app.UseDeveloperExceptionPage();
