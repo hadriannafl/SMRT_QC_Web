@@ -17,8 +17,10 @@ builder.Services.AddControllersWithViews();
 // ─── Entity Framework Core with Pomelo MySQL provider ────────────────────────
 var connectionString = GetConnectionString(builder.Configuration);
 
-// Use MySQL 8.x on Railway, MariaDB 10.4 locally — avoids blocking AutoDetect call at startup.
-var serverVersion = !string.IsNullOrEmpty(Environment.GetEnvironmentVariable("MYSQLHOST"))
+// Use MySQL 8.x on Railway, MariaDB 10.4 locally.
+var isRailway     = !string.IsNullOrEmpty(Environment.GetEnvironmentVariable("MYSQLHOST"))
+                 || !string.IsNullOrEmpty(Environment.GetEnvironmentVariable("MYSQL_URL"));
+var serverVersion = isRailway
     ? (ServerVersion)new MySqlServerVersion(new Version(8, 0, 0))
     : new MariaDbServerVersion(new Version(10, 4, 28));
 
@@ -39,16 +41,32 @@ builder.Services.AddHostedService<DbInitializerService>();
 
 static string GetConnectionString(IConfiguration config)
 {
-    var host = Environment.GetEnvironmentVariable("MYSQLHOST")
-            ?? Environment.GetEnvironmentVariable("MYSQL_HOST");
-    if (!string.IsNullOrEmpty(host))
+    // Railway provides MYSQL_URL as mysql://user:pass@host:port/db — most reliable option.
+    var mysqlUrl = Environment.GetEnvironmentVariable("MYSQL_URL");
+    if (!string.IsNullOrEmpty(mysqlUrl))
     {
-        var p        = Environment.GetEnvironmentVariable("MYSQLPORT")     ?? Environment.GetEnvironmentVariable("MYSQL_PORT")     ?? "3306";
-        var database = Environment.GetEnvironmentVariable("MYSQLDATABASE") ?? Environment.GetEnvironmentVariable("MYSQL_DATABASE") ?? "smartiqc_db";
-        var user     = Environment.GetEnvironmentVariable("MYSQLUSER")     ?? Environment.GetEnvironmentVariable("MYSQL_USER")     ?? "root";
-        var password = Environment.GetEnvironmentVariable("MYSQLPASSWORD") ?? Environment.GetEnvironmentVariable("MYSQL_PASSWORD") ?? "";
-        return $"Server={host};Port={p};Database={database};User={user};Password={password};CharSet=utf8mb4;ConnectionTimeout=15;DefaultCommandTimeout=30;";
+        var uri      = new Uri(mysqlUrl);
+        var userInfo = uri.UserInfo.Split(':');
+        var user     = Uri.UnescapeDataString(userInfo[0]);
+        var password = userInfo.Length > 1 ? Uri.UnescapeDataString(userInfo[1]) : "";
+        var host     = uri.Host;
+        var port     = uri.Port > 0 ? uri.Port : 3306;
+        var database = uri.AbsolutePath.TrimStart('/');
+        return $"Server={host};Port={port};Database={database};User={user};Password={password};CharSet=utf8mb4;ConnectionTimeout=15;DefaultCommandTimeout=30;";
     }
+
+    // Fallback: individual MYSQL* env vars
+    var h = Environment.GetEnvironmentVariable("MYSQLHOST")
+          ?? Environment.GetEnvironmentVariable("MYSQL_HOST");
+    if (!string.IsNullOrEmpty(h))
+    {
+        var p        = Environment.GetEnvironmentVariable("MYSQLPORT")     ?? "3306";
+        var database = Environment.GetEnvironmentVariable("MYSQLDATABASE") ?? "railway";
+        var user     = Environment.GetEnvironmentVariable("MYSQLUSER")     ?? "root";
+        var password = Environment.GetEnvironmentVariable("MYSQLPASSWORD") ?? "";
+        return $"Server={h};Port={p};Database={database};User={user};Password={password};CharSet=utf8mb4;ConnectionTimeout=15;DefaultCommandTimeout=30;";
+    }
+
     return config.GetConnectionString("DefaultConnection")
         ?? throw new InvalidOperationException("Connection string 'DefaultConnection' not found.");
 }
