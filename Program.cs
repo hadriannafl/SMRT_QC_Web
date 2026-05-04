@@ -9,26 +9,44 @@ using SMRT_QC_Web.Hubs;
 /// </summary>
 var builder = WebApplication.CreateBuilder(args);
 
+// Railway sets PORT env var; bind to 0.0.0.0 so the container is reachable.
+var port = Environment.GetEnvironmentVariable("PORT") ?? "5050";
+builder.WebHost.UseUrls($"http://0.0.0.0:{port}");
+
 // ─── MVC + Razor Views ───────────────────────────────────────────────────────
 builder.Services.AddControllersWithViews();
 
 // ─── Entity Framework Core with Pomelo MySQL provider ────────────────────────
-var connectionString = builder.Configuration.GetConnectionString("DefaultConnection")
-    ?? throw new InvalidOperationException("Connection string 'DefaultConnection' not found.");
+// Railway injects MYSQLHOST/MYSQLPORT/MYSQLDATABASE/MYSQLUSER/MYSQLPASSWORD;
+// fall back to DefaultConnection for local development.
+var connectionString = GetConnectionString(builder.Configuration);
 
-// Hardcoded MariaDB 10.4.28 (XAMPP) — avoids an extra DB round-trip on startup.
-// Update this version string if the MariaDB server is upgraded.
 builder.Services.AddDbContext<AppDbContext>(options =>
     options.UseMySql(
         connectionString,
-        new MariaDbServerVersion(new Version(10, 4, 28)),
+        ServerVersion.AutoDetect(connectionString),
         mySqlOptions => mySqlOptions.EnableRetryOnFailure(
-            maxRetryCount: 1,
-            maxRetryDelay: TimeSpan.FromSeconds(2),
+            maxRetryCount: 3,
+            maxRetryDelay: TimeSpan.FromSeconds(5),
             errorNumbersToAdd: null
         )
     )
 );
+
+static string GetConnectionString(IConfiguration config)
+{
+    var host = Environment.GetEnvironmentVariable("MYSQLHOST");
+    if (!string.IsNullOrEmpty(host))
+    {
+        var port     = Environment.GetEnvironmentVariable("MYSQLPORT")     ?? "3306";
+        var database = Environment.GetEnvironmentVariable("MYSQLDATABASE") ?? "smartiqc_db";
+        var user     = Environment.GetEnvironmentVariable("MYSQLUSER")     ?? "root";
+        var password = Environment.GetEnvironmentVariable("MYSQLPASSWORD") ?? "";
+        return $"Server={host};Port={port};Database={database};User={user};Password={password};CharSet=utf8mb4;ConnectionTimeout=10;DefaultCommandTimeout=30;";
+    }
+    return config.GetConnectionString("DefaultConnection")
+        ?? throw new InvalidOperationException("Connection string 'DefaultConnection' not found.");
+}
 
 // ─── Cookie-based Authentication ─────────────────────────────────────────────
 builder.Services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationScheme)
