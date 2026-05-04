@@ -13,7 +13,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("SMRT_QC_Web")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+56c26c9513ab251a41bf44fc112171553db32b20")]
 [assembly: System.Reflection.AssemblyProductAttribute("SMRT_QC_Web")]
 [assembly: System.Reflection.AssemblyTitleAttribute("SMRT_QC_Web")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]

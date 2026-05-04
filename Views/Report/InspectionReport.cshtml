@@ -1,0 +1,240 @@
+@model IEnumerable<SMRT_QC_Web.Models.InspectionRecord>
+@{
+    Layout = null;
+    var records = Model.ToList();
+    var total    = records.Count;
+    var done     = records.Count(r => r.NcnStatus == "DONE");
+    var withNcn  = records.Count(r => !string.IsNullOrEmpty(r.NcnNo));
+    var passRate = total > 0 ? (done * 100.0 / total) : 0;
+}
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Inspection Report — SmartIQC</title>
+    <link rel="stylesheet" href="~/css/tailwind.css" asp-append-version="true" />
+    <link rel="stylesheet" href="~/css/app.css" asp-append-version="true" />
+    <style>
+        body { font-family: 'Segoe UI', system-ui, sans-serif; background: #f5f6fa; }
+
+        @@media print {
+            .no-print  { display: none !important; }
+            body       { background: #fff !important; }
+            .page      { box-shadow: none !important; margin: 0 !important; padding: 1.5cm !important; }
+            .card      { box-shadow: none !important; border: 1px solid #e5e7eb !important; break-inside: avoid; }
+            .tbl tbody tr { break-inside: avoid; }
+            @@page     { margin: 1.5cm; size: A4 landscape; }
+        }
+
+        .page { max-width: 1100px; margin: 0 auto; padding: 2rem; }
+
+        .report-header {
+            background: linear-gradient(135deg, #1A237E 0%, #1565C0 100%);
+            border-radius: 1rem 1rem 0 0;
+            padding: 1.75rem 2rem;
+            color: white;
+        }
+
+        .kpi-card {
+            background: #fff;
+            border-radius: 0.75rem;
+            padding: 1.25rem;
+            text-align: center;
+            box-shadow: 0 1px 3px rgba(0,0,0,.08);
+            border-top: 3px solid transparent;
+        }
+        .kpi-blue   { border-top-color: #1A237E; }
+        .kpi-green  { border-top-color: #16a34a; }
+        .kpi-red    { border-top-color: #dc2626; }
+        .kpi-indigo { border-top-color: #4f46e5; }
+
+        .tbl th { font-size: 0.7rem; }
+        .tbl td { font-size: 0.8rem; }
+
+        .sig-box { border-top: 1.5px solid #9ca3af; padding-top: 0.5rem; margin-top: 4rem; }
+    </style>
+</head>
+<body>
+
+<!-- ── Floating action bar (screen only) ──────────────────────── -->
+<div class="no-print fixed top-0 inset-x-0 z-50 bg-white border-b border-gray-200 shadow-sm px-6 py-3 flex items-center justify-between">
+    <div class="flex items-center gap-3">
+        <div class="w-8 h-8 rounded-lg bg-[#1A237E] flex items-center justify-center">
+            <svg class="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                      d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2"/>
+            </svg>
+        </div>
+        <div>
+            <p class="font-bold text-gray-900 text-sm">Inspection Report</p>
+            <p class="text-xs text-gray-500">@ViewBag.DateFrom — @ViewBag.DateTo &nbsp;|&nbsp; @total data</p>
+        </div>
+    </div>
+    <div class="flex items-center gap-2">
+        <a href="@Url.Action("Index","Report")" class="btn btn-outline btn-sm">
+            ← Kembali
+        </a>
+        <button onclick="window.print()" class="btn btn-primary btn-sm">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                      d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"/>
+            </svg>
+            Print / Simpan PDF
+        </button>
+    </div>
+</div>
+
+<!-- ── Report Page ─────────────────────────────────────────────── -->
+<div class="page pt-20 pb-10">
+
+    <!-- Header -->
+    <div class="report-header">
+        <div class="flex items-start justify-between">
+            <div>
+                <p class="text-blue-200 text-xs uppercase tracking-widest font-semibold">PT. Sakai Indonesia</p>
+                <h1 class="text-2xl font-bold mt-1 tracking-tight">INSPECTION REPORT</h1>
+                <p class="text-blue-300 text-sm mt-0.5">SmartIQC — Quality Control System</p>
+            </div>
+            <div class="text-right text-sm space-y-0.5">
+                <div class="bg-white/10 rounded-lg px-4 py-2.5 space-y-1">
+                    <p class="text-blue-200 text-xs">Periode Laporan</p>
+                    <p class="font-bold text-base">@ViewBag.DateFrom &nbsp;–&nbsp; @ViewBag.DateTo</p>
+                    @if (ViewBag.PartNumber?.ToString() != "Semua")
+                    {
+                        <p class="text-blue-200 text-xs">Part: <span class="text-white font-semibold">@ViewBag.PartNumber</span></p>
+                    }
+                    @if (ViewBag.Status?.ToString() != "Semua")
+                    {
+                        <p class="text-blue-200 text-xs">Status: <span class="text-white font-semibold">@ViewBag.Status</span></p>
+                    }
+                    <p class="text-blue-200 text-xs border-t border-white/20 pt-1 mt-1">
+                        Dicetak oleh <span class="text-white font-semibold">@ViewBag.PrintedBy</span>
+                    </p>
+                    <p class="text-blue-300 text-xs">@ViewBag.PrintedAt</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- KPI Strip -->
+    <div class="grid grid-cols-4 gap-4 my-5">
+        <div class="kpi-card kpi-blue">
+            <p class="text-3xl font-bold text-[#1A237E]">@total</p>
+            <p class="text-xs text-gray-500 mt-1 font-medium">Total Inspeksi</p>
+        </div>
+        <div class="kpi-card kpi-green">
+            <p class="text-3xl font-bold text-green-600">@done</p>
+            <p class="text-xs text-gray-500 mt-1 font-medium">Status DONE</p>
+        </div>
+        <div class="kpi-card kpi-red">
+            <p class="text-3xl font-bold text-red-600">@withNcn</p>
+            <p class="text-xs text-gray-500 mt-1 font-medium">Ada NCN</p>
+        </div>
+        <div class="kpi-card kpi-indigo">
+            <p class="text-3xl font-bold text-indigo-600">@passRate.ToString("F1")%</p>
+            <p class="text-xs text-gray-500 mt-1 font-medium">Pass Rate</p>
+        </div>
+    </div>
+
+    <!-- Detail Table -->
+    @if (records.Any())
+    {
+        <div class="card p-0 overflow-hidden">
+            <div class="bg-gray-50 border-b border-gray-200 px-4 py-3 flex items-center justify-between">
+                <p class="text-sm font-bold text-gray-700">Detail Data Inspeksi</p>
+                <p class="text-xs text-gray-400">@total record</p>
+            </div>
+            <div class="overflow-x-auto">
+                <table class="tbl">
+                    <thead>
+                        <tr>
+                            <th class="text-center" style="width:40px">No</th>
+                            <th>Supply No</th>
+                            <th>Tgl Supply</th>
+                            <th>Part No</th>
+                            <th>PO No</th>
+                            <th>Line</th>
+                            <th>Operator</th>
+                            <th>Checker</th>
+                            <th>Approver</th>
+                            <th>NCN No</th>
+                            <th>Validasi</th>
+                            <th class="text-center">Status</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @for (int i = 0; i < records.Count; i++)
+                        {
+                            var r = records[i];
+                            <tr>
+                                <td class="text-center text-gray-400 font-mono text-xs">@(i + 1)</td>
+                                <td class="font-mono font-semibold text-gray-800">@r.SupplyNumber</td>
+                                <td class="text-gray-500 whitespace-nowrap">@(r.SupplyDate?.ToString("dd/MM/yy") ?? "—")</td>
+                                <td class="font-mono text-indigo-700">@(r.PartNumber ?? "—")</td>
+                                <td class="text-gray-600">@(r.PoNumber ?? "—")</td>
+                                <td class="text-gray-500">@(r.LineNumber ?? "—")</td>
+                                <td class="text-gray-700">@(r.Operator ?? "—")</td>
+                                <td class="text-gray-700">@(r.ChekName ?? "—")</td>
+                                <td class="text-gray-700">@(r.AppvName ?? "—")</td>
+                                <td class="font-mono text-red-600 font-semibold">@(r.NcnNo ?? "—")</td>
+                                <td class="text-gray-600">@(r.Validasi ?? "—")</td>
+                                <td class="text-center">
+                                    <span class="badge @r.StatusBadgeClass">@r.NcnStatus</span>
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    }
+    else
+    {
+        <div class="card text-center py-12 text-gray-400">
+            <p class="text-4xl mb-3">🔍</p>
+            <p class="font-medium">Tidak ada data untuk filter yang dipilih.</p>
+        </div>
+    }
+
+    <!-- Signature Area -->
+    @if (records.Any())
+    {
+        <div class="card mt-5">
+            <p class="text-xs text-gray-500 font-semibold uppercase tracking-widest mb-5">Tanda Tangan</p>
+            <div class="grid grid-cols-3 gap-10 text-center text-sm">
+                <div>
+                    <p class="text-gray-400 text-xs mb-1">Dibuat oleh</p>
+                    <div class="sig-box">
+                        <p class="font-semibold text-gray-800">( @ViewBag.PrintedBy )</p>
+                        <p class="text-xs text-gray-500 mt-0.5">QC Staff</p>
+                    </div>
+                </div>
+                <div>
+                    <p class="text-gray-400 text-xs mb-1">Diperiksa oleh</p>
+                    <div class="sig-box">
+                        <p class="font-semibold text-gray-800">( .......................... )</p>
+                        <p class="text-xs text-gray-500 mt-0.5">Supervisor</p>
+                    </div>
+                </div>
+                <div>
+                    <p class="text-gray-400 text-xs mb-1">Disetujui oleh</p>
+                    <div class="sig-box">
+                        <p class="font-semibold text-gray-800">( .......................... )</p>
+                        <p class="text-xs text-gray-500 mt-0.5">Manager</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Footer -->
+        <div class="text-center text-xs text-gray-400 mt-6">
+            <p>SmartIQC &mdash; PT. Sakai Indonesia &nbsp;|&nbsp; Dicetak: @ViewBag.PrintedAt</p>
+            <p class="mt-0.5">Dokumen ini dicetak secara otomatis oleh sistem. Sah tanpa stempel basah jika ada tanda tangan.</p>
+        </div>
+    }
+
+</div>
+
+</body>
+</html>

@@ -1,20 +1,20 @@
 {
   "format": 1,
   "restore": {
-    "/Users/devtrisolusi/Downloads/SMRT_QC_Web/SMRT_QC_Web.csproj": {}
+    "C:\\WEB\\SMRT_QC_Web\\SMRT_QC_Web.csproj": {}
   },
   "projects": {
-    "/Users/devtrisolusi/Downloads/SMRT_QC_Web/SMRT_QC_Web.csproj": {
+    "C:\\WEB\\SMRT_QC_Web\\SMRT_QC_Web.csproj": {
       "version": "1.0.0",
       "restore": {
-        "projectUniqueName": "/Users/devtrisolusi/Downloads/SMRT_QC_Web/SMRT_QC_Web.csproj",
+        "projectUniqueName": "C:\\WEB\\SMRT_QC_Web\\SMRT_QC_Web.csproj",
         "projectName": "SMRT_QC_Web",
-        "projectPath": "/Users/devtrisolusi/Downloads/SMRT_QC_Web/SMRT_QC_Web.csproj",
-        "packagesPath": "/Users/devtrisolusi/.nuget/packages/",
-        "outputPath": "/Users/devtrisolusi/Downloads/SMRT_QC_Web/obj/",
+        "projectPath": "C:\\WEB\\SMRT_QC_Web\\SMRT_QC_Web.csproj",
+        "packagesPath": "C:\\Users\\naylul\\.nuget\\packages\\",
+        "outputPath": "C:\\WEB\\SMRT_QC_Web\\obj\\",
         "projectStyle": "PackageReference",
         "configFilePaths": [
-          "/Users/devtrisolusi/.nuget/NuGet/NuGet.Config"
+          "C:\\Users\\naylul\\AppData\\Roaming\\NuGet\\NuGet.Config"
         ],
         "originalTargetFrameworks": [
           "net8.0"
@@ -37,8 +37,7 @@
           "enableAudit": "true",
           "auditLevel": "low",
           "auditMode": "direct"
-        },
-        "SdkAnalysisLevel": "10.0.200"
+        }
       },
       "frameworks": {
         "net8.0": {
@@ -86,7 +85,7 @@
               "privateAssets": "all"
             }
           },
-          "runtimeIdentifierGraphPath": "/usr/local/share/dotnet/sdk/10.0.201/PortableRuntimeIdentifierGraph.json"
+          "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\sdk\\8.0.420/PortableRuntimeIdentifierGraph.json"
         }
       }
     }

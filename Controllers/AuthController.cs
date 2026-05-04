@@ -46,14 +46,26 @@ public class AuthController : Controller
     [ValidateAntiForgeryToken]
     public async Task<IActionResult> Login(LoginViewModel model, string? returnUrl = null)
     {
-        // Lewati validasi kredensial — langsung sign-in sebagai ADMIN
+        if (!ModelState.IsValid)
+            return View(model);
+
+        var user = await _db.Users
+            .AsNoTracking()
+            .FirstOrDefaultAsync(u => u.UserName == model.UserName);
+
+        if (user == null || !BCrypt.Net.BCrypt.Verify(model.Password, user.Password))
+        {
+            ModelState.AddModelError("", "Username atau password salah.");
+            return View(model);
+        }
+
         var claims = new List<Claim>
         {
-            new Claim(ClaimTypes.NameIdentifier, "1"),
-            new Claim(ClaimTypes.Name, "ADMIN"),
-            new Claim(ClaimTypes.Role, "ADMIN"),
-            new Claim("Position", "ADMIN"),
-            new Claim("UserId", "1")
+            new Claim(ClaimTypes.NameIdentifier, user.Id.ToString()),
+            new Claim(ClaimTypes.Name, user.UserName),
+            new Claim(ClaimTypes.Role, user.Position),
+            new Claim("Position", user.Position),
+            new Claim("UserId", user.Id.ToString())
         };
 
         var identity = new ClaimsIdentity(claims, CookieAuthenticationDefaults.AuthenticationScheme);
@@ -62,7 +74,15 @@ public class AuthController : Controller
         await HttpContext.SignInAsync(
             CookieAuthenticationDefaults.AuthenticationScheme,
             principal,
-            new AuthenticationProperties { IsPersistent = true, ExpiresUtc = DateTimeOffset.UtcNow.AddDays(30) });
+            new AuthenticationProperties
+            {
+                IsPersistent = model.RememberMe,
+                ExpiresUtc = model.RememberMe
+                    ? DateTimeOffset.UtcNow.AddDays(7)
+                    : DateTimeOffset.UtcNow.AddHours(8)
+            });
+
+        _logger.LogInformation("User {UserName} ({Position}) logged in.", user.UserName, user.Position);
 
         if (!string.IsNullOrEmpty(returnUrl) && Url.IsLocalUrl(returnUrl))
             return Redirect(returnUrl);

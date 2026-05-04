@@ -1,0 +1,290 @@
+@{
+    Layout = null;
+    var inspStats  = (ViewBag.InspectionStats as IEnumerable<dynamic>) ?? Enumerable.Empty<dynamic>();
+    var ncnByPart  = (ViewBag.NcnByPart  as IEnumerable<dynamic>) ?? Enumerable.Empty<dynamic>();
+    var ncnByType  = (ViewBag.NcnByType  as IEnumerable<dynamic>) ?? Enumerable.Empty<dynamic>();
+    int totalInsp = (int)(ViewBag.TotalInspections ?? 0);
+    int totalNcns = (int)(ViewBag.TotalNcns ?? 0);
+
+    int doneCount = 0;
+    int maxTypeCount = 0;
+    int maxPartNcn = 0;
+    int totalDefectSum = 0;
+    foreach (var s in inspStats) { if ((string)s.Status == "DONE") doneCount += (int)s.Count; }
+    foreach (var t in ncnByType) { int c = (int)t.Count; if (c > maxTypeCount) maxTypeCount = c; }
+    foreach (var p in ncnByPart) { int c = (int)p.NcnCount; if (c > maxPartNcn) maxPartNcn = c; totalDefectSum += (int)p.TotalDefectQty; }
+    double passRate = totalInsp > 0 ? (doneCount * 100.0 / totalInsp) : 0;
+}
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Quality Summary — SmartIQC</title>
+    <link rel="stylesheet" href="~/css/tailwind.css" asp-append-version="true" />
+    <link rel="stylesheet" href="~/css/app.css" asp-append-version="true" />
+    <style>
+        body { font-family: 'Segoe UI', system-ui, sans-serif; background: #f5f6fa; }
+
+        @@media print {
+            .no-print  { display: none !important; }
+            body       { background: #fff !important; }
+            .page      { padding: 1.5cm !important; }
+            .card      { box-shadow: none !important; border: 1px solid #e5e7eb !important; break-inside: avoid; }
+            @@page     { margin: 1.5cm; size: A4 portrait; }
+        }
+
+        .page { max-width: 900px; margin: 0 auto; padding: 2rem; }
+
+        .report-header {
+            background: linear-gradient(135deg, #064e3b 0%, #059669 100%);
+            border-radius: 1rem 1rem 0 0;
+            padding: 1.75rem 2rem;
+            color: white;
+        }
+
+        .kpi-card {
+            background: #fff;
+            border-radius: 0.75rem;
+            padding: 1.25rem;
+            text-align: center;
+            box-shadow: 0 1px 3px rgba(0,0,0,.08);
+            border-top: 3px solid transparent;
+        }
+
+        .bar-outer {
+            background: #e5e7eb;
+            border-radius: 9999px;
+            height: 8px;
+            overflow: hidden;
+        }
+        .bar-inner {
+            height: 100%;
+            border-radius: 9999px;
+            background: linear-gradient(90deg, #1A237E, #1565C0);
+        }
+
+        .sig-box { border-top: 1.5px solid #9ca3af; padding-top: 0.5rem; margin-top: 4rem; }
+    </style>
+</head>
+<body>
+
+<!-- ── Floating action bar ──────────────────────────────────────── -->
+<div class="no-print fixed top-0 inset-x-0 z-50 bg-white border-b border-gray-200 shadow-sm px-6 py-3 flex items-center justify-between">
+    <div class="flex items-center gap-3">
+        <div class="w-8 h-8 rounded-lg bg-emerald-600 flex items-center justify-center">
+            <svg class="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                      d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/>
+            </svg>
+        </div>
+        <div>
+            <p class="font-bold text-gray-900 text-sm">Quality Summary</p>
+            <p class="text-xs text-gray-500">@ViewBag.DateFrom — @ViewBag.DateTo</p>
+        </div>
+    </div>
+    <div class="flex items-center gap-2">
+        <a href="@Url.Action("Index","Report")" class="btn btn-outline btn-sm">← Kembali</a>
+        <button onclick="window.print()" class="btn btn-success btn-sm">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                      d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"/>
+            </svg>
+            Print / Simpan PDF
+        </button>
+    </div>
+</div>
+
+<!-- ── Report Page ──────────────────────────────────────────────── -->
+<div class="page pt-20 pb-10">
+
+    <!-- Header -->
+    <div class="report-header">
+        <div class="flex items-start justify-between">
+            <div>
+                <p class="text-emerald-200 text-xs uppercase tracking-widest font-semibold">PT. Sakai Indonesia</p>
+                <h1 class="text-2xl font-bold mt-1 tracking-tight">QUALITY SUMMARY REPORT</h1>
+                <p class="text-emerald-300 text-sm mt-0.5">SmartIQC — Quality Control System</p>
+            </div>
+            <div class="text-right text-sm">
+                <div class="bg-white/10 rounded-lg px-4 py-2.5 space-y-1">
+                    <p class="text-emerald-200 text-xs">Periode Analitik</p>
+                    <p class="font-bold text-base">@ViewBag.DateFrom &nbsp;–&nbsp; @ViewBag.DateTo</p>
+                    <p class="text-emerald-200 text-xs border-t border-white/20 pt-1 mt-1">
+                        Dicetak oleh <span class="text-white font-semibold">@ViewBag.PrintedBy</span>
+                    </p>
+                    <p class="text-emerald-300 text-xs">@ViewBag.PrintedAt</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- KPI Strip -->
+    <div class="grid grid-cols-3 gap-4 my-5">
+        <div class="kpi-card" style="border-top-color:#1A237E">
+            <p class="text-3xl font-bold text-[#1A237E]">@totalInsp</p>
+            <p class="text-xs text-gray-500 mt-1 font-medium">Total Inspeksi</p>
+        </div>
+        <div class="kpi-card" style="border-top-color:#dc2626">
+            <p class="text-3xl font-bold text-red-600">@totalNcns</p>
+            <p class="text-xs text-gray-500 mt-1 font-medium">Total NCN</p>
+        </div>
+        <div class="kpi-card" style="border-top-color:#16a34a">
+            <p class="text-3xl font-bold text-green-600">@passRate.ToString("F1")%</p>
+            <p class="text-xs text-gray-500 mt-1 font-medium">Pass Rate (DONE)</p>
+        </div>
+    </div>
+
+    <div class="grid grid-cols-2 gap-5">
+
+        <!-- Inspection Status Breakdown -->
+        <div class="card">
+            <div class="flex items-center gap-2 mb-4">
+                <div class="w-2 h-5 rounded-full bg-[#1A237E]"></div>
+                <p class="font-bold text-gray-800 text-sm">Status Inspeksi</p>
+            </div>
+            @if (inspStats.Any())
+            {
+                <div class="space-y-3">
+                    @foreach (var s in inspStats)
+                    {
+                        var pct = totalInsp > 0 ? ((int)s.Count * 100.0 / totalInsp) : 0;
+                        var badgeClass = s.Status switch {
+                            "CHECK"      => "badge-check",
+                            "VALIDATION" => "badge-validation",
+                            "MAKE NCN"   => "badge-makencn",
+                            "DONE"       => "badge-done",
+                            _            => "badge-default"
+                        };
+                        <div>
+                            <div class="flex items-center justify-between mb-1">
+                                <span class="badge @badgeClass">@s.Status</span>
+                                <span class="text-sm font-bold text-gray-800">@s.Count <span class="text-xs text-gray-400 font-normal">(@pct.ToString("F0")%)</span></span>
+                            </div>
+                            <div class="bar-outer">
+                                <div class="bar-inner" style="width:@pct.ToString("F0")%"></div>
+                            </div>
+                        </div>
+                    }
+                </div>
+            }
+            else
+            {
+                <p class="text-sm text-gray-400 text-center py-6">Belum ada data inspeksi.</p>
+            }
+        </div>
+
+        <!-- Top Defect Types -->
+        <div class="card">
+            <div class="flex items-center gap-2 mb-4">
+                <div class="w-2 h-5 rounded-full bg-red-500"></div>
+                <p class="font-bold text-gray-800 text-sm">Top Jenis Defect</p>
+            </div>
+            @if (ncnByType.Any())
+            {
+                var maxCount = maxTypeCount;
+                <div class="space-y-3">
+                    @foreach (var t in ncnByType.Take(8))
+                    {
+                        var pct = maxCount > 0 ? ((int)t.Count * 100.0 / maxCount) : 0;
+                        <div>
+                            <div class="flex items-center justify-between mb-1">
+                                <span class="text-xs text-gray-700 font-medium truncate max-w-xs">@t.DefectType</span>
+                                <span class="text-sm font-bold text-red-600 ml-2">@t.Count</span>
+                            </div>
+                            <div class="bar-outer">
+                                <div style="width:@pct.ToString("F0")%; height:100%; border-radius:9999px; background:linear-gradient(90deg,#dc2626,#ef4444);"></div>
+                            </div>
+                        </div>
+                    }
+                </div>
+            }
+            else
+            {
+                <p class="text-sm text-gray-400 text-center py-6">Belum ada data defect.</p>
+            }
+        </div>
+
+    </div>
+
+    <!-- NCN by Part Number -->
+    @if (ncnByPart.Any())
+    {
+        <div class="card mt-5 p-0 overflow-hidden">
+            <div class="bg-gray-50 border-b border-gray-200 px-4 py-3">
+                <p class="text-sm font-bold text-gray-700">NCN per Part Number</p>
+            </div>
+            <table class="tbl">
+                <thead>
+                    <tr>
+                        <th>Part Number</th>
+                        <th class="text-right">Jumlah NCN</th>
+                        <th class="text-right">Total Defect (pcs)</th>
+                        <th>Proporsi NCN</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var p in ncnByPart)
+                    {
+                        var pct = maxPartNcn > 0 ? ((int)p.NcnCount * 100.0 / maxPartNcn) : 0;
+                        <tr>
+                            <td class="font-mono font-semibold text-indigo-700">@p.PartNumber</td>
+                            <td class="text-right font-bold text-red-600">@p.NcnCount</td>
+                            <td class="text-right text-gray-700">@((int)p.TotalDefectQty).ToString("N0")</td>
+                            <td style="width:200px">
+                                <div class="bar-outer">
+                                    <div style="width:@pct.ToString("F0")%; height:100%; border-radius:9999px; background:linear-gradient(90deg,#7c3aed,#8b5cf6);"></div>
+                                </div>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+                <tfoot>
+                    <tr class="bg-gray-50 font-semibold">
+                        <td class="text-gray-600 text-xs">Total</td>
+                        <td class="text-right text-red-700">@totalNcns</td>
+                        <td class="text-right text-gray-700">
+                            @totalDefectSum.ToString("N0")
+                        </td>
+                        <td></td>
+                    </tr>
+                </tfoot>
+            </table>
+        </div>
+    }
+
+    <!-- Signature -->
+    <div class="card mt-5">
+        <p class="text-xs text-gray-500 font-semibold uppercase tracking-widest mb-5">Tanda Tangan</p>
+        <div class="grid grid-cols-3 gap-10 text-center text-sm">
+            <div>
+                <p class="text-gray-400 text-xs mb-1">Dibuat oleh</p>
+                <div class="sig-box">
+                    <p class="font-semibold text-gray-800">( @ViewBag.PrintedBy )</p>
+                    <p class="text-xs text-gray-500 mt-0.5">QC Staff</p>
+                </div>
+            </div>
+            <div>
+                <p class="text-gray-400 text-xs mb-1">Diperiksa oleh</p>
+                <div class="sig-box">
+                    <p class="font-semibold text-gray-800">( .......................... )</p>
+                    <p class="text-xs text-gray-500 mt-0.5">Supervisor</p>
+                </div>
+            </div>
+            <div>
+                <p class="text-gray-400 text-xs mb-1">Disetujui oleh</p>
+                <div class="sig-box">
+                    <p class="font-semibold text-gray-800">( .......................... )</p>
+                    <p class="text-xs text-gray-500 mt-0.5">Manager</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="text-center text-xs text-gray-400 mt-6">
+        <p>SmartIQC &mdash; PT. Sakai Indonesia &nbsp;|&nbsp; Dicetak: @ViewBag.PrintedAt</p>
+    </div>
+
+</div>
+</body>
+</html>

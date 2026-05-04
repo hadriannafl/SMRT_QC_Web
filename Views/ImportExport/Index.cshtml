@@ -2,109 +2,275 @@
     ViewData["Title"] = "Import / Export Data";
 }
 
-<div class="max-w-4xl mx-auto space-y-6">
+<div class="space-y-6" x-data="importExport()">
 
+    <!-- Header -->
     <div>
         <h2 class="text-xl font-bold text-gray-900">Import / Export Data</h2>
-        <p class="text-sm text-gray-500">Transfer data inspeksi dari/ke file Excel (.xlsx)</p>
+        <p class="text-sm text-gray-500">Transfer data dari/ke file Excel (.xlsx)</p>
     </div>
 
-    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-
-        <!-- ── Import ─────────────────────────────────────────── -->
-        <div class="card" x-data="{ dragging: false }">
-            <div class="card-header">📥 Import dari Excel</div>
-
-            <p class="text-sm text-gray-500 mb-4">
-                Upload file Excel dengan format kolom:<br>
-                <code class="bg-gray-100 px-1 rounded text-xs">
-                    SupplyNumber | SupplyDate | PartNumber | PoNumber | Operator | ItemCategory
-                </code>
-            </p>
-
-            <form method="post" action="@Url.Action("Import","ImportExport")"
-                  enctype="multipart/form-data">
-                @Html.AntiForgeryToken()
-
-                <!-- Drop zone -->
-                <div class="border-2 border-dashed rounded-xl p-8 text-center transition-colors cursor-pointer mb-4"
-                     :class="dragging ? 'border-blue-400 bg-blue-50' : 'border-gray-300 hover:border-gray-400'"
-                     @@dragover.prevent="dragging = true"
-                     @@dragleave="dragging = false"
-                     @@drop.prevent="dragging = false; $refs.fileInput.files = $event.dataTransfer.files"
-                     @@click="$refs.fileInput.click()">
-                    <p class="text-3xl mb-2">📂</p>
-                    <p class="text-sm font-medium text-gray-600">Drag & drop file Excel di sini</p>
-                    <p class="text-xs text-gray-400 mt-1">atau klik untuk pilih file (.xlsx, maks 5 MB)</p>
-                    <input x-ref="fileInput" type="file" name="file" accept=".xlsx,.xls"
-                           class="hidden" required
-                           @@change="$el.closest('div').querySelector('p.text-sm').textContent = $el.files[0]?.name || 'Pilih file'" />
-                </div>
-
-                <button type="submit" class="btn btn-blue w-full">
-                    📥 Import Sekarang
-                </button>
-            </form>
-
-            <!-- Download Template -->
-            <div class="mt-4 pt-4 border-t border-gray-100">
-                <p class="text-xs text-gray-500 mb-2">Belum punya template?</p>
-                <a href="@Url.Action("DownloadTemplate","ImportExport")"
-                   class="btn btn-outline btn-sm">
-                    ⬇️ Download Template Excel
-                </a>
-            </div>
-        </div>
-
-        <!-- ── Export ─────────────────────────────────────────── -->
-        <div class="card">
-            <div class="card-header">📤 Export ke Excel</div>
-
-            <p class="text-sm text-gray-500 mb-5">
-                Export data inspeksi ke file Excel. Pilih rentang tanggal dan filter status.
-            </p>
-
-            <form method="get" action="@Url.Action("Export","ImportExport")">
-                <div class="form-group">
-                    <label class="form-label">Dari Tanggal</label>
-                    <input name="dateFrom" type="date" class="form-input"
-                           value="@DateTime.Now.AddMonths(-1).ToString("yyyy-MM-dd")" />
-                </div>
-                <div class="form-group">
-                    <label class="form-label">Sampai Tanggal</label>
-                    <input name="dateTo" type="date" class="form-input"
-                           value="@DateTime.Now.ToString("yyyy-MM-dd")" />
-                </div>
-                <div class="form-group">
-                    <label class="form-label">Filter Status</label>
-                    <select name="status" class="form-input">
-                        <option value="">Semua Status</option>
-                        <option value="CHECK">CHECK</option>
-                        <option value="VALIDATION">VALIDATION</option>
-                        <option value="MAKE NCN">MAKE NCN</option>
-                        <option value="DONE">DONE</option>
-                    </select>
-                </div>
-                <div class="form-group">
-                    <label class="form-label">Part Number</label>
-                    <input name="partNumber" class="form-input" placeholder="Kosongkan = semua part" />
-                </div>
-
-                <button type="submit" class="btn btn-success w-full mt-2">
-                    📤 Export ke Excel
-                </button>
-            </form>
-        </div>
-    </div>
-
-    <!-- Import history / log -->
-    @if (ViewBag.ImportResult != null)
+    <!-- Alert hasil import -->
+    @if (TempData["Success"] != null)
     {
-        <div class="card border-l-4 @(ViewBag.ImportSuccess == true ? "border-green-500" : "border-red-500")">
-            <div class="card-header @(ViewBag.ImportSuccess == true ? "text-green-700" : "text-red-700")">
-                @(ViewBag.ImportSuccess == true ? "✅ Import Berhasil" : "❌ Import Gagal")
-            </div>
-            <p class="text-sm text-gray-700">@ViewBag.ImportResult</p>
+        <div class="flex items-start gap-3 bg-green-50 border border-green-200 rounded-xl px-4 py-3">
+            <span class="text-green-600 font-bold mt-0.5">✓</span>
+            <p class="text-sm text-green-700">@TempData["Success"]</p>
         </div>
     }
+    @if (TempData["Error"] != null)
+    {
+        <div class="flex items-start gap-3 bg-red-50 border border-red-200 rounded-xl px-4 py-3">
+            <span class="text-red-600 font-bold mt-0.5">✕</span>
+            <p class="text-sm text-red-700">@TempData["Error"]</p>
+        </div>
+    }
+
+    <!-- Toast AJAX -->
+    <div x-show="toast.show" x-cloak
+         :class="toast.success ? 'bg-green-600' : 'bg-red-600'"
+         class="fixed bottom-5 right-5 text-white px-5 py-3 rounded-xl shadow-lg text-sm font-medium z-50">
+        <span x-text="toast.message"></span>
+    </div>
+
+    <!-- ═══ IMPORT SECTION ══════════════════════════════════════════ -->
+    <div>
+        <h3 class="text-sm font-bold text-gray-500 uppercase tracking-widest mb-3">📥 Import dari Excel</h3>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
+
+            <!-- Import Inspeksi -->
+            <div class="card">
+                <div class="flex items-center gap-3 mb-4">
+                    <div style="width:40px;height:40px;border-radius:10px;background:#eff6ff;display:flex;align-items:center;justify-content:center;flex-shrink:0">
+                        <svg style="width:20px;height:20px;color:#2563eb" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                  d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/>
+                        </svg>
+                    </div>
+                    <div>
+                        <p class="font-bold text-gray-900">Import Data Inspeksi</p>
+                        <p class="text-xs text-gray-500">Upload .xlsx data inspeksi massal</p>
+                    </div>
+                </div>
+
+                <!-- Format kolom -->
+                <div class="bg-gray-50 rounded-lg px-3 py-2 mb-4 text-xs text-gray-600">
+                    <p class="font-semibold mb-1">Format kolom (urutan):</p>
+                    <div class="grid grid-cols-2 gap-x-4 gap-y-0.5">
+                        <span>1. SupplyNumber <span class="text-red-500">*</span></span>
+                        <span>2. SupplyDate (yyyy-MM-dd)</span>
+                        <span>3. LineNumber</span>
+                        <span>4. PartNumber</span>
+                        <span>5. PoNumber</span>
+                        <span>6. Operator</span>
+                        <span>7. ItemCategory</span>
+                    </div>
+                </div>
+
+                <form x-on:submit.prevent="submitImport($event.target, 'inspeksi')"
+                      action="@Url.Action("ImportInspections","ImportExport")"
+                      method="post" enctype="multipart/form-data">
+                    @Html.AntiForgeryToken()
+
+                    <div class="border-2 border-dashed rounded-xl p-6 text-center cursor-pointer mb-3 transition-colors"
+                         :class="dragInsp ? 'border-blue-400 bg-blue-50' : 'border-gray-300 hover:border-blue-300'"
+                         x-data="{ dragInsp: false }"
+                         @@dragover.prevent="dragInsp = true"
+                         @@dragleave="dragInsp = false"
+                         @@drop.prevent="dragInsp = false; $refs.inspFile.files = $event.dataTransfer.files; inspFileName = $refs.inspFile.files[0]?.name"
+                         @@click="$refs.inspFile.click()">
+                        <p class="text-2xl mb-1">📂</p>
+                        <p class="text-sm font-medium text-gray-600" x-text="inspFileName || 'Pilih atau drag file .xlsx'"></p>
+                        <p class="text-xs text-gray-400 mt-0.5">Maks. 5 MB</p>
+                        <input x-ref="inspFile" type="file" name="file" accept=".xlsx" class="hidden" required
+                               x-on:change="inspFileName = $refs.inspFile.files[0]?.name" />
+                    </div>
+
+                    <button type="submit" class="btn btn-blue w-full justify-center" :disabled="loadingInsp">
+                        <span x-show="!loadingInsp">📥 Import Inspeksi</span>
+                        <span x-show="loadingInsp">Mengimpor...</span>
+                    </button>
+                </form>
+
+                <div class="mt-3 pt-3 border-t border-gray-100 flex items-center justify-between">
+                    <p class="text-xs text-gray-400">Belum punya template?</p>
+                    <a href="@Url.Action("DownloadTemplate","ImportExport")?type=inspections"
+                       class="btn btn-outline btn-sm">⬇ Template Inspeksi</a>
+                </div>
+            </div>
+
+            <!-- Import Parts -->
+            <div class="card">
+                <div class="flex items-center gap-3 mb-4">
+                    <div style="width:40px;height:40px;border-radius:10px;background:#f0fdf4;display:flex;align-items:center;justify-content:center;flex-shrink:0">
+                        <svg style="width:20px;height:20px;color:#16a34a" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                  d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"/>
+                        </svg>
+                    </div>
+                    <div>
+                        <p class="font-bold text-gray-900">Import Master Part</p>
+                        <p class="text-xs text-gray-500">Upload .xlsx data part number</p>
+                    </div>
+                </div>
+
+                <!-- Format kolom -->
+                <div class="bg-gray-50 rounded-lg px-3 py-2 mb-4 text-xs text-gray-600">
+                    <p class="font-semibold mb-1">Format kolom (urutan):</p>
+                    <div class="grid grid-cols-2 gap-x-4 gap-y-0.5">
+                        <span>1. PartNumber <span class="text-red-500">*</span></span>
+                        <span>2. PartName <span class="text-red-500">*</span></span>
+                        <span>3. Category</span>
+                        <span>4. Spec</span>
+                    </div>
+                    <p class="text-gray-400 mt-1.5">Part duplikat akan dilewati otomatis.</p>
+                </div>
+
+                <form x-on:submit.prevent="submitImport($event.target, 'part')"
+                      action="@Url.Action("ImportParts","ImportExport")"
+                      method="post" enctype="multipart/form-data">
+                    @Html.AntiForgeryToken()
+
+                    <div class="border-2 border-dashed rounded-xl p-6 text-center cursor-pointer mb-3 transition-colors"
+                         :class="dragPart ? 'border-green-400 bg-green-50' : 'border-gray-300 hover:border-green-300'"
+                         x-data="{ dragPart: false }"
+                         @@dragover.prevent="dragPart = true"
+                         @@dragleave="dragPart = false"
+                         @@drop.prevent="dragPart = false; $refs.partFile.files = $event.dataTransfer.files; partFileName = $refs.partFile.files[0]?.name"
+                         @@click="$refs.partFile.click()">
+                        <p class="text-2xl mb-1">📂</p>
+                        <p class="text-sm font-medium text-gray-600" x-text="partFileName || 'Pilih atau drag file .xlsx'"></p>
+                        <p class="text-xs text-gray-400 mt-0.5">Maks. 5 MB</p>
+                        <input x-ref="partFile" type="file" name="file" accept=".xlsx" class="hidden" required
+                               x-on:change="partFileName = $refs.partFile.files[0]?.name" />
+                    </div>
+
+                    <button type="submit" class="btn btn-success w-full justify-center" :disabled="loadingPart">
+                        <span x-show="!loadingPart">📥 Import Part</span>
+                        <span x-show="loadingPart">Mengimpor...</span>
+                    </button>
+                </form>
+
+                <div class="mt-3 pt-3 border-t border-gray-100 flex items-center justify-between">
+                    <p class="text-xs text-gray-400">Belum punya template?</p>
+                    <a href="@Url.Action("DownloadTemplate","ImportExport")?type=parts"
+                       class="btn btn-outline btn-sm">⬇ Template Part</a>
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+    <!-- ═══ EXPORT SECTION ══════════════════════════════════════════ -->
+    <div>
+        <h3 class="text-sm font-bold text-gray-500 uppercase tracking-widest mb-3">📤 Export ke Excel</h3>
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-5">
+
+            <!-- Export Inspeksi -->
+            <div class="card">
+                <p class="font-bold text-gray-900 mb-1">Export Inspeksi</p>
+                <p class="text-xs text-gray-500 mb-4">Semua data inspeksi sesuai filter</p>
+                <form method="get" action="@Url.Action("ExportInspections","ImportExport")">
+                    <div class="form-group">
+                        <label class="form-label">Dari Tanggal</label>
+                        <input name="dateFrom" type="date" class="form-input"
+                               value="@DateTime.Today.AddMonths(-1).ToString("yyyy-MM-dd")" />
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Sampai Tanggal</label>
+                        <input name="dateTo" type="date" class="form-input"
+                               value="@DateTime.Today.ToString("yyyy-MM-dd")" />
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Part Number</label>
+                        <input name="partNumber" class="form-input" placeholder="Kosongkan = semua" />
+                    </div>
+                    <button type="submit" class="btn btn-blue w-full justify-center">
+                        📤 Export Inspeksi
+                    </button>
+                </form>
+            </div>
+
+            <!-- Export NCN -->
+            <div class="card">
+                <p class="font-bold text-gray-900 mb-1">Export NCN</p>
+                <p class="text-xs text-gray-500 mb-4">Semua data Non-Conformance Notice</p>
+                <form method="get" action="@Url.Action("ExportNcn","ImportExport")">
+                    <div class="form-group">
+                        <label class="form-label">Dari Tanggal</label>
+                        <input name="dateFrom" type="date" class="form-input"
+                               value="@DateTime.Today.AddMonths(-1).ToString("yyyy-MM-dd")" />
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Sampai Tanggal</label>
+                        <input name="dateTo" type="date" class="form-input"
+                               value="@DateTime.Today.ToString("yyyy-MM-dd")" />
+                    </div>
+                    <div class="form-group mb-0" style="visibility:hidden">
+                        <label class="form-label">&nbsp;</label>
+                        <input class="form-input" disabled />
+                    </div>
+                    <button type="submit" class="btn btn-danger w-full justify-center">
+                        📤 Export NCN
+                    </button>
+                </form>
+            </div>
+
+            <!-- Export Parts -->
+            <div class="card">
+                <p class="font-bold text-gray-900 mb-1">Export Master Part</p>
+                <p class="text-xs text-gray-500 mb-4">Seluruh data master part number</p>
+                <div class="bg-gray-50 rounded-lg p-4 text-sm text-gray-500 text-center mb-4" style="min-height:130px;display:flex;align-items:center;justify-content:center">
+                    <div>
+                        <p class="text-2xl mb-2">📦</p>
+                        <p>Semua part akan diekspor<br>tanpa filter tambahan.</p>
+                    </div>
+                </div>
+                <a href="@Url.Action("ExportParts","ImportExport")" class="btn btn-success w-full justify-center">
+                    📤 Export Master Part
+                </a>
+            </div>
+
+        </div>
+    </div>
+
 </div>
+
+@section Scripts {
+<script>
+function importExport() {
+    return {
+        inspFileName: '',
+        partFileName: '',
+        loadingInsp: false,
+        loadingPart: false,
+        toast: { show: false, success: true, message: '' },
+
+        showToast(success, message) {
+            this.toast = { show: true, success, message };
+            setTimeout(() => this.toast.show = false, 4000);
+        },
+
+        async submitImport(form, type) {
+            if (type === 'inspeksi') this.loadingInsp = true;
+            else this.loadingPart = true;
+
+            try {
+                const res = await fetch(form.action, { method: 'POST', body: new FormData(form) });
+                const json = await res.json();
+                this.showToast(json.success, json.message);
+                if (json.success) {
+                    if (type === 'inspeksi') this.inspFileName = '';
+                    else this.partFileName = '';
+                }
+            } catch {
+                this.showToast(false, 'Terjadi kesalahan jaringan.');
+            } finally {
+                if (type === 'inspeksi') this.loadingInsp = false;
+                else this.loadingPart = false;
+            }
+        }
+    };
+}
+</script>
+}

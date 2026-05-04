@@ -5,6 +5,13 @@
 
 <div class="space-y-5" x-data="userPage()">
 
+    <!-- Toast notification -->
+    <div x-show="toast.show" x-cloak
+         :class="toast.success ? 'bg-green-600' : 'bg-red-600'"
+         class="fixed bottom-5 right-5 text-white px-5 py-3 rounded-xl shadow-lg text-sm font-medium z-50">
+        <span x-text="toast.message"></span>
+    </div>
+
     <!-- Header -->
     <div class="flex items-center justify-between">
         <div>
@@ -66,11 +73,9 @@
                                         class="btn btn-outline btn-sm">Edit</button>
                                 @if (u.UserName != User.Identity?.Name)
                                 {
-                                    <form method="post" action="@Url.Action("Delete","User", new {id = u.Id})"
-                                          onsubmit="return confirmDelete('@u.UserName')">
-                                        @Html.AntiForgeryToken()
-                                        <button type="submit" class="btn btn-danger btn-sm">Hapus</button>
-                                    </form>
+                                    <button type="button"
+                                            @@click="deleteUser(@u.Id, '@u.UserName')"
+                                            class="btn btn-danger btn-sm">Hapus</button>
                                 }
                             </div>
                         </td>
@@ -84,11 +89,13 @@
     <div class="modal-backdrop" x-show="showCreate" x-cloak>
         <div class="modal-box max-w-md p-6" @@click.stop>
             <h3 class="text-lg font-bold text-gray-900 mb-5">Tambah User Baru</h3>
-            <form method="post" action="@Url.Action("Create","User")">
+            <form x-on:submit.prevent="submitCreate($event.target)"
+                  action="@Url.Action("Create","User")" method="post">
                 @Html.AntiForgeryToken()
                 <div class="form-group">
                     <label class="form-label">Username *</label>
-                    <input name="UserName" class="form-input" required placeholder="Huruf besar, tanpa spasi"
+                    <input name="UserName" class="form-input" required minlength="3"
+                           placeholder="Huruf besar, tanpa spasi"
                            style="text-transform:uppercase" />
                 </div>
                 <div class="form-group">
@@ -108,7 +115,10 @@
                 </div>
                 <div class="flex gap-3 justify-end mt-5">
                     <button type="button" class="btn btn-outline" @@click="showCreate = false">Batal</button>
-                    <button type="submit" class="btn btn-primary">Simpan</button>
+                    <button type="submit" class="btn btn-primary" :disabled="submitting">
+                        <span x-show="!submitting">Simpan</span>
+                        <span x-show="submitting">Menyimpan...</span>
+                    </button>
                 </div>
             </form>
         </div>
@@ -118,20 +128,25 @@
     <div class="modal-backdrop" x-show="showEdit" x-cloak>
         <div class="modal-box max-w-md p-6" @@click.stop>
             <h3 class="text-lg font-bold text-gray-900 mb-5">Edit User</h3>
-            <form method="post" :action="`/User/Edit/${editId}`">
+            <form x-on:submit.prevent="submitEdit($event.target)"
+                  :action="`/User/Edit/${editId}`" method="post">
                 @Html.AntiForgeryToken()
-                <input type="hidden" name="_method" value="PUT" />
+                <input type="hidden" name="Id" :value="editId" />
                 <div class="form-group">
-                    <label class="form-label">Username</label>
-                    <input :value="editName" class="form-input bg-gray-50" readonly />
+                    <label class="form-label">Username *</label>
+                    <input name="UserName" class="form-input" required minlength="3"
+                           :value="editName"
+                           @@input="editName = $event.target.value"
+                           style="text-transform:uppercase" />
                 </div>
                 <div class="form-group">
                     <label class="form-label">Password Baru <span class="text-gray-400 font-normal">(kosongkan jika tidak ganti)</span></label>
-                    <input name="NewPassword" type="password" class="form-input" placeholder="Password baru" />
+                    <input name="NewPassword" type="password" class="form-input"
+                           placeholder="Password baru (min. 6 karakter)" minlength="6" />
                 </div>
                 <div class="form-group">
                     <label class="form-label">Posisi / Role *</label>
-                    <select name="Position" class="form-input" required :value="editPosition">
+                    <select name="Position" class="form-input" required>
                         <option value="ADMIN" :selected="editPosition === 'ADMIN'">ADMIN</option>
                         <option value="MANAGER" :selected="editPosition === 'MANAGER'">MANAGER</option>
                         <option value="SUPERVISOR" :selected="editPosition === 'SUPERVISOR'">SUPERVISOR</option>
@@ -140,7 +155,10 @@
                 </div>
                 <div class="flex gap-3 justify-end mt-5">
                     <button type="button" class="btn btn-outline" @@click="showEdit = false">Batal</button>
-                    <button type="submit" class="btn btn-primary">Update</button>
+                    <button type="submit" class="btn btn-primary" :disabled="submitting">
+                        <span x-show="!submitting">Update</span>
+                        <span x-show="submitting">Menyimpan...</span>
+                    </button>
                 </div>
             </form>
         </div>
@@ -154,15 +172,79 @@ function userPage() {
     return {
         showCreate: false,
         showEdit: false,
+        submitting: false,
         editId: null, editName: '', editPosition: '',
+        toast: { show: false, success: true, message: '' },
 
-        openCreate() { this.showCreate = true; },
+        openCreate() {
+            this.showCreate = true;
+        },
 
         openEdit(id, name, position) {
             this.editId = id;
             this.editName = name;
             this.editPosition = position;
             this.showEdit = true;
+        },
+
+        showToast(success, message) {
+            this.toast = { show: true, success, message };
+            setTimeout(() => this.toast.show = false, 3500);
+        },
+
+        getCsrfToken() {
+            return document.querySelector('input[name="__RequestVerificationToken"]')?.value ?? '';
+        },
+
+        async submitCreate(form) {
+            this.submitting = true;
+            try {
+                const res = await fetch(form.action, { method: 'POST', body: new FormData(form) });
+                const json = await res.json();
+                this.showToast(json.success, json.message);
+                if (json.success) {
+                    this.showCreate = false;
+                    setTimeout(() => location.reload(), 1200);
+                }
+            } catch {
+                this.showToast(false, 'Terjadi kesalahan jaringan.');
+            } finally {
+                this.submitting = false;
+            }
+        },
+
+        async submitEdit(form) {
+            this.submitting = true;
+            try {
+                const res = await fetch(form.action, { method: 'POST', body: new FormData(form) });
+                const json = await res.json();
+                this.showToast(json.success, json.message);
+                if (json.success) {
+                    this.showEdit = false;
+                    setTimeout(() => location.reload(), 1200);
+                }
+            } catch {
+                this.showToast(false, 'Terjadi kesalahan jaringan.');
+            } finally {
+                this.submitting = false;
+            }
+        },
+
+        async deleteUser(id, name) {
+            if (!confirm(`Hapus user "${name}"?\nTindakan ini tidak dapat dibatalkan.`)) return;
+            try {
+                const body = new URLSearchParams({ __RequestVerificationToken: this.getCsrfToken() });
+                const res = await fetch(`/User/Delete/${id}`, {
+                    method: 'POST',
+                    body,
+                    headers: { 'Content-Type': 'application/x-www-form-urlencoded' }
+                });
+                const json = await res.json();
+                this.showToast(json.success, json.message);
+                if (json.success) setTimeout(() => location.reload(), 1200);
+            } catch {
+                this.showToast(false, 'Terjadi kesalahan jaringan.');
+            }
         }
     };
 }
