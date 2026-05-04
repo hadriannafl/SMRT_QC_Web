@@ -32,8 +32,8 @@ public class AppDbContext : DbContext
             entity.Property(e => e.UserName).HasColumnName("user_name").HasMaxLength(100).IsRequired();
             entity.Property(e => e.Password).HasColumnName("password").HasMaxLength(255).IsRequired();
             entity.Property(e => e.Position).HasColumnName("position").HasMaxLength(20).IsRequired();
-            entity.Property(e => e.CreatedAt).HasColumnName("created_at").HasDefaultValueSql("CURRENT_TIMESTAMP");
-            entity.Property(e => e.UpdatedAt).HasColumnName("updated_at").HasDefaultValueSql("CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP");
+            entity.Property(e => e.CreatedAt).HasColumnName("created_at").HasColumnType("timestamp").HasDefaultValueSql("CURRENT_TIMESTAMP");
+            entity.Property(e => e.UpdatedAt).HasColumnName("updated_at").HasColumnType("timestamp").HasDefaultValueSql("CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP");
             entity.HasIndex(e => e.UserName).IsUnique();
         });
 
@@ -47,8 +47,8 @@ public class AppDbContext : DbContext
             entity.Property(e => e.PartName).HasColumnName("part_name").HasMaxLength(200).IsRequired();
             entity.Property(e => e.Category).HasColumnName("category").HasMaxLength(100);
             entity.Property(e => e.Spec).HasColumnName("spec").HasMaxLength(500);
-            entity.Property(e => e.CreatedAt).HasColumnName("created_at").HasDefaultValueSql("CURRENT_TIMESTAMP");
-            entity.Property(e => e.UpdatedAt).HasColumnName("updated_at").HasDefaultValueSql("CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP");
+            entity.Property(e => e.CreatedAt).HasColumnName("created_at").HasColumnType("timestamp").HasDefaultValueSql("CURRENT_TIMESTAMP");
+            entity.Property(e => e.UpdatedAt).HasColumnName("updated_at").HasColumnType("timestamp").HasDefaultValueSql("CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP");
             entity.HasIndex(e => e.PartNumber).IsUnique();
         });
 
@@ -63,7 +63,7 @@ public class AppDbContext : DbContext
             entity.Property(e => e.Specification).HasColumnName("specification").HasMaxLength(300);
             entity.Property(e => e.Method).HasColumnName("method").HasMaxLength(100);
             entity.Property(e => e.Unit).HasColumnName("unit").HasMaxLength(50);
-            entity.Property(e => e.CreatedAt).HasColumnName("created_at").HasDefaultValueSql("CURRENT_TIMESTAMP");
+            entity.Property(e => e.CreatedAt).HasColumnName("created_at").HasColumnType("timestamp").HasDefaultValueSql("CURRENT_TIMESTAMP");
         });
 
         // ─── InspectionRecords table ──────────────────────────────────────────
@@ -84,8 +84,8 @@ public class AppDbContext : DbContext
             entity.Property(e => e.AppvName).HasColumnName("appv_name").HasMaxLength(100);
             entity.Property(e => e.Validasi).HasColumnName("validasi").HasMaxLength(50);
             entity.Property(e => e.NcnStatus).HasColumnName("ncn_status").HasMaxLength(30);
-            entity.Property(e => e.CreatedAt).HasColumnName("created_at").HasDefaultValueSql("CURRENT_TIMESTAMP");
-            entity.Property(e => e.UpdatedAt).HasColumnName("updated_at").HasDefaultValueSql("CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP");
+            entity.Property(e => e.CreatedAt).HasColumnName("created_at").HasColumnType("timestamp").HasDefaultValueSql("CURRENT_TIMESTAMP");
+            entity.Property(e => e.UpdatedAt).HasColumnName("updated_at").HasColumnType("timestamp").HasDefaultValueSql("CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP");
             // Indexes for dashboard COUNT queries filtering by ncn_status and sorting by created_at
             entity.HasIndex(e => e.NcnStatus).HasDatabaseName("idx_inspection_ncn_status");
             entity.HasIndex(e => e.CreatedAt).HasDatabaseName("idx_inspection_created_at");
@@ -108,8 +108,8 @@ public class AppDbContext : DbContext
                 .HasDefaultValue("CHECK");
             entity.Property(e => e.PhotoPath).HasColumnName("photo_path").HasMaxLength(500);
             entity.Property(e => e.Notes).HasColumnName("notes").HasColumnType("text");
-            entity.Property(e => e.CreatedAt).HasColumnName("created_at").HasDefaultValueSql("CURRENT_TIMESTAMP");
-            entity.Property(e => e.UpdatedAt).HasColumnName("updated_at").HasDefaultValueSql("CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP");
+            entity.Property(e => e.CreatedAt).HasColumnName("created_at").HasColumnType("timestamp").HasDefaultValueSql("CURRENT_TIMESTAMP");
+            entity.Property(e => e.UpdatedAt).HasColumnName("updated_at").HasColumnType("timestamp").HasDefaultValueSql("CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP");
             entity.HasIndex(e => e.NcnNo).IsUnique();
             // Indexes for dashboard COUNT queries filtering by status and sorting by created_at
             entity.HasIndex(e => e.Status).HasDatabaseName("idx_ncn_status");
@@ -127,7 +127,7 @@ public class AppDbContext : DbContext
             entity.Property(e => e.Position).HasColumnName("position").HasMaxLength(20);
             entity.Property(e => e.Notif).HasColumnName("notif").HasMaxLength(500);
             entity.Property(e => e.IsRead).HasColumnName("is_read").HasDefaultValue(false);
-            entity.Property(e => e.CreatedAt).HasColumnName("created_at").HasDefaultValueSql("CURRENT_TIMESTAMP");
+            entity.Property(e => e.CreatedAt).HasColumnName("created_at").HasColumnType("timestamp").HasDefaultValueSql("CURRENT_TIMESTAMP");
             // Composite index for the frequent WHERE is_read=0 AND position=? filter
             entity.HasIndex(e => new { e.IsRead, e.Position }).HasDatabaseName("idx_notif_read_position");
             entity.HasIndex(e => e.CreatedAt).HasDatabaseName("idx_notif_created_at");
