@@ -123,17 +123,20 @@ app.UseAuthorization();
 // Temporary diagnostic endpoint — remove after deploy is stable
 app.MapGet("/health", async (AppDbContext db) =>
 {
-    var host = Environment.GetEnvironmentVariable("MYSQLHOST") ?? "(not set)";
+    var host   = Environment.GetEnvironmentVariable("MYSQLHOST")     ?? "(not set)";
     var dbName = Environment.GetEnvironmentVariable("MYSQLDATABASE") ?? "(not set)";
+    var user   = Environment.GetEnvironmentVariable("MYSQLUSER")     ?? "(not set)";
+    var port   = Environment.GetEnvironmentVariable("MYSQLPORT")     ?? "(not set)";
     try
     {
-        var canConnect = await db.Database.CanConnectAsync();
-        var userCount  = canConnect ? db.Users.Count() : -1;
-        return Results.Ok(new { status = "ok", host, dbName, canConnect, userCount });
+        await db.Database.OpenConnectionAsync();
+        await db.Database.CloseConnectionAsync();
+        var userCount = db.Users.Count();
+        return Results.Ok(new { status = "connected", host, port, dbName, user, userCount });
     }
     catch (Exception ex)
     {
-        return Results.Ok(new { status = "error", host, dbName, error = ex.Message });
+        return Results.Ok(new { status = "error", host, port, dbName, user, error = ex.Message });
     }
 });
 
