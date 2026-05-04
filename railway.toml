@@ -3,6 +3,5 @@ builder = "dockerfile"
 dockerfilePath = "Dockerfile"
 
 [deploy]
-healthcheckPath = "/Auth/Login"
 restartPolicyType = "on_failure"
 restartPolicyMaxRetries = 3

@@ -2,11 +2,8 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using SMRT_QC_Web.Data;
 using SMRT_QC_Web.Hubs;
+using SMRT_QC_Web.Models;
 
-/// <summary>
-/// Entry point for the SmartIQC web application.
-/// Configures services, middleware pipeline, authentication, EF Core, SignalR, and session.
-/// </summary>
 var builder = WebApplication.CreateBuilder(args);
 
 // Railway sets PORT env var; bind to 0.0.0.0 so the container is reachable.
@@ -17,8 +14,6 @@ builder.WebHost.UseUrls($"http://0.0.0.0:{port}");
 builder.Services.AddControllersWithViews();
 
 // ─── Entity Framework Core with Pomelo MySQL provider ────────────────────────
-// Railway injects MYSQLHOST/MYSQLPORT/MYSQLDATABASE/MYSQLUSER/MYSQLPASSWORD;
-// fall back to DefaultConnection for local development.
 var connectionString = GetConnectionString(builder.Configuration);
 
 // Use MySQL 8.x on Railway, MariaDB 10.4 locally — avoids blocking AutoDetect call at startup.
@@ -38,18 +33,20 @@ builder.Services.AddDbContext<AppDbContext>(options =>
     )
 );
 
+// DB init runs in background so HTTP server starts immediately (Railway healthcheck friendly)
+builder.Services.AddHostedService<DbInitializerService>();
+
 static string GetConnectionString(IConfiguration config)
 {
-    // Railway may expose variables as MYSQLHOST or MYSQL_HOST depending on plugin version
     var host = Environment.GetEnvironmentVariable("MYSQLHOST")
             ?? Environment.GetEnvironmentVariable("MYSQL_HOST");
     if (!string.IsNullOrEmpty(host))
     {
-        var port     = Environment.GetEnvironmentVariable("MYSQLPORT")     ?? Environment.GetEnvironmentVariable("MYSQL_PORT")     ?? "3306";
+        var p        = Environment.GetEnvironmentVariable("MYSQLPORT")     ?? Environment.GetEnvironmentVariable("MYSQL_PORT")     ?? "3306";
         var database = Environment.GetEnvironmentVariable("MYSQLDATABASE") ?? Environment.GetEnvironmentVariable("MYSQL_DATABASE") ?? "smartiqc_db";
         var user     = Environment.GetEnvironmentVariable("MYSQLUSER")     ?? Environment.GetEnvironmentVariable("MYSQL_USER")     ?? "root";
         var password = Environment.GetEnvironmentVariable("MYSQLPASSWORD") ?? Environment.GetEnvironmentVariable("MYSQL_PASSWORD") ?? "";
-        return $"Server={host};Port={port};Database={database};User={user};Password={password};CharSet=utf8mb4;ConnectionTimeout=15;DefaultCommandTimeout=30;";
+        return $"Server={host};Port={p};Database={database};User={user};Password={password};CharSet=utf8mb4;ConnectionTimeout=15;DefaultCommandTimeout=30;";
     }
     return config.GetConnectionString("DefaultConnection")
         ?? throw new InvalidOperationException("Connection string 'DefaultConnection' not found.");
@@ -96,64 +93,6 @@ builder.Services.AddHttpContextAccessor();
 
 var app = builder.Build();
 
-// ─── Apply EF Core migrations on startup ─────────────────────────────────────
-using (var scope = app.Services.CreateScope())
-{
-    var db     = scope.ServiceProvider.GetRequiredService<AppDbContext>();
-    var logger = scope.ServiceProvider.GetRequiredService<ILogger<Program>>();
-
-    for (int attempt = 1; attempt <= 10; attempt++)
-    {
-        try
-        {
-            db.Database.EnsureCreated();
-            SeedDemoUsers(db);
-            break;
-        }
-        catch (Exception ex)
-        {
-            logger.LogWarning("DB not ready (attempt {Attempt}/10): {Message}", attempt, ex.Message);
-            if (attempt == 10) throw;
-            Thread.Sleep(TimeSpan.FromSeconds(attempt * 2));
-        }
-    }
-}
-
-static void SeedDemoUsers(AppDbContext db)
-{
-    var demoUsers = new[]
-    {
-        new { UserName = "demo_admin",      Position = "ADMIN" },
-        new { UserName = "demo_manager",    Position = "MANAGER" },
-        new { UserName = "demo_supervisor", Position = "SUPERVISOR" },
-        new { UserName = "demo_staff",      Position = "STAFF" },
-    };
-
-    var existingNames = db.Users
-        .Where(u => u.UserName.StartsWith("demo_"))
-        .Select(u => u.UserName)
-        .ToHashSet();
-
-    var passwordHash = BCrypt.Net.BCrypt.HashPassword("demo123", workFactor: 12);
-    var now = DateTime.Now;
-
-    foreach (var d in demoUsers)
-    {
-        if (existingNames.Contains(d.UserName)) continue;
-
-        db.Users.Add(new SMRT_QC_Web.Models.User
-        {
-            UserName  = d.UserName,
-            Password  = passwordHash,
-            Position  = d.Position,
-            CreatedAt = now,
-            UpdatedAt = now,
-        });
-    }
-
-    db.SaveChanges();
-}
-
 // ─── Middleware pipeline ──────────────────────────────────────────────────────
 if (app.Environment.IsDevelopment())
 {
@@ -163,7 +102,6 @@ else
 {
     app.UseExceptionHandler("/Dashboard/Error");
     // Railway terminates TLS at the proxy — skip HTTPS redirect inside the container.
-    // Only redirect when not running on Railway (i.e. self-hosted with a real cert).
     if (string.IsNullOrEmpty(Environment.GetEnvironmentVariable("RAILWAY_ENVIRONMENT_NAME")))
     {
         app.UseHsts();
@@ -178,12 +116,72 @@ app.UseSession();
 app.UseAuthentication();
 app.UseAuthorization();
 
-// ─── Route configuration ──────────────────────────────────────────────────────
 app.MapControllerRoute(
     name: "default",
     pattern: "{controller=Auth}/{action=Login}/{id?}");
 
-// ─── SignalR hub endpoint ─────────────────────────────────────────────────────
 app.MapHub<NotificationHub>("/notificationHub");
 
 app.Run();
+
+// ─── Background service: DB init + seed (runs after HTTP server starts) ──────
+public class DbInitializerService(IServiceProvider services, ILogger<DbInitializerService> logger)
+    : BackgroundService
+{
+    protected override async Task ExecuteAsync(CancellationToken ct)
+    {
+        // Small delay so the HTTP server is fully up before we hit the DB
+        await Task.Delay(TimeSpan.FromSeconds(3), ct);
+
+        for (int attempt = 1; attempt <= 20 && !ct.IsCancellationRequested; attempt++)
+        {
+            try
+            {
+                using var scope = services.CreateScope();
+                var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+                db.Database.EnsureCreated();
+                SeedDemoUsers(db);
+                logger.LogInformation("Database ready.");
+                return;
+            }
+            catch (Exception ex)
+            {
+                logger.LogWarning("DB not ready (attempt {A}/20): {M}", attempt, ex.Message);
+                await Task.Delay(TimeSpan.FromSeconds(Math.Min(attempt * 3, 30)), ct);
+            }
+        }
+    }
+
+    private static void SeedDemoUsers(AppDbContext db)
+    {
+        var demoUsers = new[]
+        {
+            new { UserName = "demo_admin",      Position = "ADMIN" },
+            new { UserName = "demo_manager",    Position = "MANAGER" },
+            new { UserName = "demo_supervisor", Position = "SUPERVISOR" },
+            new { UserName = "demo_staff",      Position = "STAFF" },
+        };
+
+        var existing = db.Users
+            .Where(u => u.UserName.StartsWith("demo_"))
+            .Select(u => u.UserName)
+            .ToHashSet();
+
+        var hash = BCrypt.Net.BCrypt.HashPassword("demo123", workFactor: 12);
+        var now  = DateTime.Now;
+
+        foreach (var d in demoUsers)
+        {
+            if (existing.Contains(d.UserName)) continue;
+            db.Users.Add(new User
+            {
+                UserName  = d.UserName,
+                Password  = hash,
+                Position  = d.Position,
+                CreatedAt = now,
+                UpdatedAt = now,
+            });
+        }
+        db.SaveChanges();
+    }
+}
