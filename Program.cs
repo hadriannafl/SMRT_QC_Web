@@ -147,8 +147,7 @@ app.MapGet("/health", async (AppDbContext db) =>
     var port   = Environment.GetEnvironmentVariable("MYSQLPORT")     ?? "(not set)";
     try
     {
-        await db.Database.OpenConnectionAsync();
-        await db.Database.CloseConnectionAsync();
+        await db.Database.EnsureCreatedAsync();
         var userCount = db.Users.Count();
         return Results.Ok(new { status = "connected", host, port, dbName, user, userCount });
     }
