@@ -95,10 +95,12 @@ builder.Services.AddHttpContextAccessor();
 var app = builder.Build();
 
 // ─── Middleware pipeline ──────────────────────────────────────────────────────
-// Trust Railway's reverse proxy so antiforgery tokens use the correct https scheme.
+// Trust Railway's reverse proxy (any IP) so scheme/host headers are read correctly.
 app.UseForwardedHeaders(new ForwardedHeadersOptions
 {
-    ForwardedHeaders = ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto
+    ForwardedHeaders = ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto,
+    KnownNetworks = { },
+    KnownProxies  = { },
 });
 
 if (app.Environment.IsDevelopment())
@@ -108,12 +110,7 @@ if (app.Environment.IsDevelopment())
 else
 {
     app.UseExceptionHandler("/Dashboard/Error");
-    // Railway terminates TLS at the proxy — skip HTTPS redirect inside the container.
-    if (string.IsNullOrEmpty(Environment.GetEnvironmentVariable("RAILWAY_ENVIRONMENT_NAME")))
-    {
-        app.UseHsts();
-        app.UseHttpsRedirection();
-    }
+    // Railway terminates TLS at the proxy — never redirect HTTP→HTTPS inside the container.
 }
 app.UseStaticFiles();
 
