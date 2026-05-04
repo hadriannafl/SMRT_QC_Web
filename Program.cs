@@ -123,6 +123,23 @@ app.UseSession();
 app.UseAuthentication();
 app.UseAuthorization();
 
+// Temporary diagnostic endpoint — remove after deploy is stable
+app.MapGet("/health", async (AppDbContext db) =>
+{
+    var host = Environment.GetEnvironmentVariable("MYSQLHOST") ?? "(not set)";
+    var dbName = Environment.GetEnvironmentVariable("MYSQLDATABASE") ?? "(not set)";
+    try
+    {
+        var canConnect = await db.Database.CanConnectAsync();
+        var userCount  = canConnect ? db.Users.Count() : -1;
+        return Results.Ok(new { status = "ok", host, dbName, canConnect, userCount });
+    }
+    catch (Exception ex)
+    {
+        return Results.Ok(new { status = "error", host, dbName, error = ex.Message });
+    }
+});
+
 app.MapControllerRoute(
     name: "default",
     pattern: "{controller=Auth}/{action=Login}/{id?}");
