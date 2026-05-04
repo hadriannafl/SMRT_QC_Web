@@ -76,6 +76,42 @@ using (var scope = app.Services.CreateScope())
 {
     var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
     db.Database.EnsureCreated();
+    SeedDemoUsers(db);
+}
+
+static void SeedDemoUsers(AppDbContext db)
+{
+    var demoUsers = new[]
+    {
+        new { UserName = "demo_admin",      Position = "ADMIN" },
+        new { UserName = "demo_manager",    Position = "MANAGER" },
+        new { UserName = "demo_supervisor", Position = "SUPERVISOR" },
+        new { UserName = "demo_staff",      Position = "STAFF" },
+    };
+
+    var existingNames = db.Users
+        .Where(u => u.UserName.StartsWith("demo_"))
+        .Select(u => u.UserName)
+        .ToHashSet();
+
+    var passwordHash = BCrypt.Net.BCrypt.HashPassword("demo123", workFactor: 12);
+    var now = DateTime.Now;
+
+    foreach (var d in demoUsers)
+    {
+        if (existingNames.Contains(d.UserName)) continue;
+
+        db.Users.Add(new SMRT_QC_Web.Models.User
+        {
+            UserName  = d.UserName,
+            Password  = passwordHash,
+            Position  = d.Position,
+            CreatedAt = now,
+            UpdatedAt = now,
+        });
+    }
+
+    db.SaveChanges();
 }
 
 // ─── Middleware pipeline ──────────────────────────────────────────────────────
