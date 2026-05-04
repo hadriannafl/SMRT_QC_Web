@@ -21,13 +21,18 @@ builder.Services.AddControllersWithViews();
 // fall back to DefaultConnection for local development.
 var connectionString = GetConnectionString(builder.Configuration);
 
+// Use MySQL 8.x on Railway, MariaDB 10.4 locally — avoids blocking AutoDetect call at startup.
+var serverVersion = !string.IsNullOrEmpty(Environment.GetEnvironmentVariable("MYSQLHOST"))
+    ? (ServerVersion)new MySqlServerVersion(new Version(8, 0, 0))
+    : new MariaDbServerVersion(new Version(10, 4, 28));
+
 builder.Services.AddDbContext<AppDbContext>(options =>
     options.UseMySql(
         connectionString,
-        ServerVersion.AutoDetect(connectionString),
+        serverVersion,
         mySqlOptions => mySqlOptions.EnableRetryOnFailure(
-            maxRetryCount: 3,
-            maxRetryDelay: TimeSpan.FromSeconds(5),
+            maxRetryCount: 5,
+            maxRetryDelay: TimeSpan.FromSeconds(10),
             errorNumbersToAdd: null
         )
     )
@@ -35,14 +40,16 @@ builder.Services.AddDbContext<AppDbContext>(options =>
 
 static string GetConnectionString(IConfiguration config)
 {
-    var host = Environment.GetEnvironmentVariable("MYSQLHOST");
+    // Railway may expose variables as MYSQLHOST or MYSQL_HOST depending on plugin version
+    var host = Environment.GetEnvironmentVariable("MYSQLHOST")
+            ?? Environment.GetEnvironmentVariable("MYSQL_HOST");
     if (!string.IsNullOrEmpty(host))
     {
-        var port     = Environment.GetEnvironmentVariable("MYSQLPORT")     ?? "3306";
-        var database = Environment.GetEnvironmentVariable("MYSQLDATABASE") ?? "smartiqc_db";
-        var user     = Environment.GetEnvironmentVariable("MYSQLUSER")     ?? "root";
-        var password = Environment.GetEnvironmentVariable("MYSQLPASSWORD") ?? "";
-        return $"Server={host};Port={port};Database={database};User={user};Password={password};CharSet=utf8mb4;ConnectionTimeout=10;DefaultCommandTimeout=30;";
+        var port     = Environment.GetEnvironmentVariable("MYSQLPORT")     ?? Environment.GetEnvironmentVariable("MYSQL_PORT")     ?? "3306";
+        var database = Environment.GetEnvironmentVariable("MYSQLDATABASE") ?? Environment.GetEnvironmentVariable("MYSQL_DATABASE") ?? "smartiqc_db";
+        var user     = Environment.GetEnvironmentVariable("MYSQLUSER")     ?? Environment.GetEnvironmentVariable("MYSQL_USER")     ?? "root";
+        var password = Environment.GetEnvironmentVariable("MYSQLPASSWORD") ?? Environment.GetEnvironmentVariable("MYSQL_PASSWORD") ?? "";
+        return $"Server={host};Port={port};Database={database};User={user};Password={password};CharSet=utf8mb4;ConnectionTimeout=15;DefaultCommandTimeout=30;";
     }
     return config.GetConnectionString("DefaultConnection")
         ?? throw new InvalidOperationException("Connection string 'DefaultConnection' not found.");
@@ -89,12 +96,27 @@ builder.Services.AddHttpContextAccessor();
 
 var app = builder.Build();
 
-// ─── Apply EF Core migrations on startup (dev convenience) ───────────────────
+// ─── Apply EF Core migrations on startup ─────────────────────────────────────
 using (var scope = app.Services.CreateScope())
 {
-    var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
-    db.Database.EnsureCreated();
-    SeedDemoUsers(db);
+    var db     = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+    var logger = scope.ServiceProvider.GetRequiredService<ILogger<Program>>();
+
+    for (int attempt = 1; attempt <= 10; attempt++)
+    {
+        try
+        {
+            db.Database.EnsureCreated();
+            SeedDemoUsers(db);
+            break;
+        }
+        catch (Exception ex)
+        {
+            logger.LogWarning("DB not ready (attempt {Attempt}/10): {Message}", attempt, ex.Message);
+            if (attempt == 10) throw;
+            Thread.Sleep(TimeSpan.FromSeconds(attempt * 2));
+        }
+    }
 }
 
 static void SeedDemoUsers(AppDbContext db)
