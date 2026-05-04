@@ -155,17 +155,20 @@ static void SeedDemoUsers(AppDbContext db)
 }
 
 // ─── Middleware pipeline ──────────────────────────────────────────────────────
-if (!app.Environment.IsDevelopment())
+if (app.Environment.IsDevelopment())
 {
-    app.UseExceptionHandler("/Dashboard/Error");
-    app.UseHsts();
-    // HTTPS redirect only in production — in development the dev cert
-    // is often not trusted, causing a slow double round-trip on every request.
-    app.UseHttpsRedirection();
+    app.UseDeveloperExceptionPage();
 }
 else
 {
-    app.UseDeveloperExceptionPage();
+    app.UseExceptionHandler("/Dashboard/Error");
+    // Railway terminates TLS at the proxy — skip HTTPS redirect inside the container.
+    // Only redirect when not running on Railway (i.e. self-hosted with a real cert).
+    if (string.IsNullOrEmpty(Environment.GetEnvironmentVariable("RAILWAY_ENVIRONMENT_NAME")))
+    {
+        app.UseHsts();
+        app.UseHttpsRedirection();
+    }
 }
 app.UseStaticFiles();
 
